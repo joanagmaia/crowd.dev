@@ -107,6 +107,10 @@ const props = defineProps({
   filters: {
     type: Object,
     default: null
+  },
+  isPublicView: {
+    type: Boolean,
+    default: false
   }
 })
 
@@ -125,7 +129,9 @@ const datasets = computed(() => {
       borderColor: '#E94F2E',
       measure: 'Members.cumulativeCount',
       granularity: granularity.value,
-      tooltipBtn: 'View members'
+      ...(!props.isPublicView && {
+        tooltipBtn: 'View members'
+      })
     }
   ]
 })

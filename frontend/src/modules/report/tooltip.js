@@ -97,7 +97,7 @@ export const externalTooltipHandler = (
           innerHtml += `
           <tr class="border-b border-gray-100 last:border-none text-gray-900 text-xs font-medium">
             <td class="pb-2">
-              <div class="flex items-center gap-2">
+              <div class="flex items-center flex-wrap gap-2">
                 <div class="${classes.bgColor} rounded-md ${
             classes.color
           } h-5 px-1 flex items-center">

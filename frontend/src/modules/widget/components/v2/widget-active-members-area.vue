@@ -108,6 +108,10 @@ const props = defineProps({
   filters: {
     type: Object,
     default: null
+  },
+  isPublicView: {
+    type: Boolean,
+    default: false
   }
 })
 
@@ -127,7 +131,9 @@ const datasets = computed(() => [
     borderColor: '#E94F2E',
     measure: 'Members.count',
     granularity: granularity.value.value,
-    tooltipBtn: 'View members'
+    ...(!props.isPublicView && {
+      tooltipBtn: 'View members'
+    })
   },
   {
     name: 'Returning members',
@@ -135,7 +141,9 @@ const datasets = computed(() => [
     borderColor: '#E94F2E',
     measure: 'Members.count',
     granularity: granularity.value.value,
-    tooltipBtn: 'View members'
+    ...(!props.isPublicView && {
+      tooltipBtn: 'View members'
+    })
   }
 ])
 

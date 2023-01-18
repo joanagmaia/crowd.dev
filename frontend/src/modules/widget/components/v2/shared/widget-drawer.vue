@@ -79,7 +79,10 @@
       <!-- Error -->
       <app-widget-error v-else-if="error" />
       <!-- Empty -->
-      <app-widget-empty v-else-if="list.length === 0" />
+      <app-widget-empty
+        v-else-if="list.length === 0"
+        :with-description="showPeriod"
+      />
 
       <!-- Table component -->
       <component

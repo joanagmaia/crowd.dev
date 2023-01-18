@@ -197,7 +197,7 @@ const getTotalMembers = async ({ pagination }) => {
     }),
     'joinedAt_DESC',
     pagination.pageSize,
-    pagination.currentPage,
+    (pagination.currentPage - 1) * pagination.pageSize,
     false
   )
 }

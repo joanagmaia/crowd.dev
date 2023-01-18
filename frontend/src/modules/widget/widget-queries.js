@@ -174,7 +174,7 @@ export const ACTIVE_LEADERBOARD_MEMBERS_FILTER = ({
 }
 
 export const ACTIVE_MEMBERS_FILTER = ({
-  period,
+  granularity,
   selectedPlatforms,
   selectedHasTeamMembers
 }) => {
@@ -183,7 +183,7 @@ export const ACTIVE_MEMBERS_FILTER = ({
       lastActive: {
         gte: moment()
           .utc()
-          .subtract(period.value, period.granularity)
+          .startOf(granularity)
           .toISOString()
       }
     }

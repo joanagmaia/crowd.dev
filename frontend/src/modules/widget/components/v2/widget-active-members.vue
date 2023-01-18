@@ -112,13 +112,12 @@ const { doExport } = mapActions('member')
 
 const drawerExpanded = ref()
 const drawerTitle = ref()
-const drawerPeriod = ref()
+const drawerGranularity = ref()
 
 const widgets = computed(() => {
   return [
     {
       title: 'Active members today',
-      filter: ONE_DAY_PERIOD_FILTER,
       query: query(
         ONE_DAY_PERIOD_FILTER,
         DAILY_GRANULARITY_FILTER
@@ -127,7 +126,6 @@ const widgets = computed(() => {
     },
     {
       title: 'Active members this week',
-      filter: FOURTEEN_DAYS_PERIOD_FILTER,
       query: query(
         FOURTEEN_DAYS_PERIOD_FILTER,
         WEEKLY_GRANULARITY_FILTER
@@ -136,7 +134,6 @@ const widgets = computed(() => {
     },
     {
       title: 'Active members this month',
-      filter: THIRTY_DAYS_PERIOD_FILTER,
       query: query(
         THIRTY_DAYS_PERIOD_FILTER,
         MONTHLY_GRANULARITY_FILTER
@@ -174,13 +171,10 @@ const kpiPreviousValue = (resultSet) => {
 }
 
 // Fetch function to pass to detail drawer
-const getActiveMembers = async ({
-  pagination,
-  period = drawerPeriod.value
-}) => {
+const getActiveMembers = async ({ pagination }) => {
   return await MemberService.list(
     ACTIVE_MEMBERS_FILTER({
-      period,
+      granularity: drawerGranularity.value,
       selectedPlatforms: props.filters.platform.value,
       selectedHasTeamMembers: props.filters.teamMembers
     }),
@@ -201,7 +195,7 @@ const handleDrawerOpen = async (widget) => {
 
   drawerExpanded.value = true
   drawerTitle.value = widget.title
-  drawerPeriod.value = widget.filter
+  drawerGranularity.value = widget.period
 }
 
 const onExport = async () => {
@@ -209,7 +203,7 @@ const onExport = async () => {
     await doExport(
       false,
       ACTIVE_MEMBERS_FILTER({
-        period: drawerPeriod.value,
+        granularity: drawerGranularity.value,
         selectedPlatforms: props.filters.platform.value,
         selectedHasTeamMembers: props.filters.teamMembers
       })

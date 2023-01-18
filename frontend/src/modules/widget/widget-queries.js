@@ -200,7 +200,7 @@ export const ACTIVE_MEMBERS_FILTER = ({
   }
 }
 
-export const ACTIVE_MEMBERS_FILTER_2 = ({
+export const ACTIVE_MEMBERS_AREA_FILTER = ({
   date,
   granularity,
   selectedPlatforms,

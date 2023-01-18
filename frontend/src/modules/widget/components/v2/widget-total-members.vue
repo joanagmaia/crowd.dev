@@ -68,6 +68,7 @@
     :title="drawerTitle"
     module-name="member"
     size="480px"
+    @on-export="onExport"
   ></app-widget-drawer>
 </template>
 <script setup>
@@ -85,7 +86,10 @@ import AppWidgetArea from '@/modules/widget/components/v2/shared/widget-area.vue
 import AppWidgetLoading from '@/modules/widget/components/v2/shared/widget-loading.vue'
 import AppWidgetError from '@/modules/widget/components/v2/shared/widget-error.vue'
 
-import { mapGetters } from '@/shared/vuex/vuex.helpers'
+import {
+  mapGetters,
+  mapActions
+} from '@/shared/vuex/vuex.helpers'
 import { getTimeGranularityFromPeriod } from '@/utils/reports'
 import {
   TOTAL_MEMBERS_QUERY,
@@ -126,6 +130,7 @@ const datasets = computed(() => {
   ]
 })
 
+const { doExport } = mapActions('member')
 const { cubejsApi } = mapGetters('widget')
 
 const query = computed(() => {
@@ -217,6 +222,22 @@ const onViewMoreClick = (date) => {
     drawerTitle.value = 'Monthly total members'
   } else {
     drawerTitle.value = 'Daily total members'
+  }
+}
+
+const onExport = async () => {
+  try {
+    await doExport(
+      false,
+      TOTAL_MEMBERS_FILTER({
+        date: drawerDate.value,
+        granularity: granularity.value,
+        selectedPlatforms: props.filters.platform.value,
+        selectedHasTeamMembers: props.filters.teamMembers
+      })
+    )
+  } catch (error) {
+    console.log(error)
   }
 }
 </script>

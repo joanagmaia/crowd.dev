@@ -63,6 +63,7 @@
     :period="selectedPeriod"
     module-name="member"
     size="480px"
+    @on-export="onExport"
   ></app-widget-drawer>
 </template>
 
@@ -92,6 +93,7 @@ import AppWidgetError from '@/modules/widget/components/v2/shared/widget-error.v
 import AppWidgetEmpty from '@/modules/widget/components/v2/shared/widget-empty.vue'
 import { ACTIVE_LEADERBOARD_MEMBERS_FILTER } from '@/modules/widget/widget-queries'
 import AppWidgetDrawer from '@/modules/widget/components/v2/shared/widget-drawer.vue'
+import { mapActions } from '@/shared/vuex/vuex.helpers'
 
 const props = defineProps({
   platforms: {
@@ -111,6 +113,8 @@ const selectedPeriod = ref(SEVEN_DAYS_PERIOD_FILTER)
 const activeMembers = ref([])
 const loading = ref(false)
 const error = ref(false)
+
+const { doExport } = mapActions('member')
 
 const empty = computed(
   () =>
@@ -215,5 +219,20 @@ const handleDrawerOpen = async () => {
 
   drawerExpanded.value = true
   drawerTitle.value = 'Most active members'
+}
+
+const onExport = async () => {
+  try {
+    await doExport(
+      false,
+      ACTIVE_LEADERBOARD_MEMBERS_FILTER({
+        period: selectedPeriod.value,
+        selectedPlatforms: props.platforms,
+        selectedHasTeamMembers: props.teamMembers
+      })
+    )
+  } catch (error) {
+    console.log(error)
+  }
 }
 </script>

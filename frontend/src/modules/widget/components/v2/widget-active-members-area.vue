@@ -68,6 +68,7 @@
     :title="drawerTitle"
     module-name="member"
     size="480px"
+    @on-export="onExport"
   ></app-widget-drawer>
 </template>
 
@@ -88,12 +89,15 @@ import {
   SEVEN_DAYS_PERIOD_FILTER
 } from '@/modules/widget/widget-constants'
 import { QueryRenderer } from '@cubejs-client/vue3'
-import { mapGetters } from '@/shared/vuex/vuex.helpers'
+import {
+  mapGetters,
+  mapActions
+} from '@/shared/vuex/vuex.helpers'
 import { chartOptions } from '@/modules/report/templates/template-report-charts'
 import {
   TOTAL_ACTIVE_MEMBERS_QUERY,
   TOTAL_ACTIVE_RETURNING_MEMBERS_QUERY,
-  ACTIVE_MEMBERS_FILTER_2
+  ACTIVE_MEMBERS_AREA_FILTER
 } from '@/modules/widget/widget-queries'
 import AppWidgetLoading from '@/modules/widget/components/v2/shared/widget-loading.vue'
 import AppWidgetError from '@/modules/widget/components/v2/shared/widget-error.vue'
@@ -113,6 +117,9 @@ const granularity = ref(DAILY_GRANULARITY_FILTER)
 const drawerExpanded = ref()
 const drawerDate = ref()
 const drawerTitle = ref()
+
+const { doExport } = mapActions('member')
+const { cubejsApi } = mapGetters('widget')
 
 const datasets = computed(() => [
   {
@@ -152,7 +159,7 @@ const query = computed(() => {
 // Fetch function to pass to detail drawer
 const getActiveMembers = async ({ pagination }) => {
   return await MemberService.list(
-    ACTIVE_MEMBERS_FILTER_2({
+    ACTIVE_MEMBERS_AREA_FILTER({
       date: drawerDate.value,
       granularity: granularity.value.value,
       selectedPlatforms: props.filters.platform.value,
@@ -187,7 +194,21 @@ const onViewMoreClick = (date) => {
   }
 }
 
-const { cubejsApi } = mapGetters('widget')
+const onExport = async () => {
+  try {
+    await doExport(
+      false,
+      ACTIVE_MEMBERS_AREA_FILTER({
+        date: drawerDate.value,
+        granularity: granularity.value.value,
+        selectedPlatforms: props.filters.platform.value,
+        selectedHasTeamMembers: props.filters.teamMembers
+      })
+    )
+  } catch (error) {
+    console.log(error)
+  }
+}
 </script>
 
 <style lang="scss" scoped>

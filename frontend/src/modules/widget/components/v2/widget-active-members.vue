@@ -64,6 +64,7 @@
       :title="drawerTitle"
       module-name="member"
       size="480px"
+      @on-export="onExport"
     ></app-widget-drawer>
   </div>
 </template>
@@ -71,7 +72,10 @@
 <script setup>
 import { computed, ref, defineProps } from 'vue'
 import { QueryRenderer } from '@cubejs-client/vue3'
-import { mapGetters } from '@/shared/vuex/vuex.helpers'
+import {
+  mapGetters,
+  mapActions
+} from '@/shared/vuex/vuex.helpers'
 import {
   TOTAL_ACTIVE_MEMBERS_QUERY,
   ACTIVE_MEMBERS_FILTER
@@ -104,6 +108,7 @@ const props = defineProps({
 
 const { currentUser } = mapGetters('auth')
 const { cubejsApi } = mapGetters('widget')
+const { doExport } = mapActions('member')
 
 const drawerExpanded = ref()
 const drawerTitle = ref()
@@ -197,6 +202,21 @@ const handleDrawerOpen = async (widget) => {
   drawerExpanded.value = true
   drawerTitle.value = widget.title
   drawerPeriod.value = widget.filter
+}
+
+const onExport = async () => {
+  try {
+    await doExport(
+      false,
+      ACTIVE_MEMBERS_FILTER({
+        period: drawerPeriod.value,
+        selectedPlatforms: props.filters.platform.value,
+        selectedHasTeamMembers: props.filters.teamMembers
+      })
+    )
+  } catch (error) {
+    console.log(error)
+  }
 }
 </script>
 

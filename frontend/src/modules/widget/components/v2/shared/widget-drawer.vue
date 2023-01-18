@@ -1,5 +1,9 @@
 <template>
-  <app-drawer v-model="model" :title="title" size="480px"
+  <app-drawer
+    v-model="model"
+    :title="title"
+    size="480px"
+    :show-footer="false"
     ><template v-if="showPeriod || showDate" #belowTitle>
       <div class="mt-2">
         <el-popover
@@ -122,14 +126,14 @@ import AppWidgetLoading from '@/modules/widget/components/v2/shared/widget-loadi
 import AppWidgetError from '@/modules/widget/components/v2/shared/widget-error.vue'
 import AppWidgetEmpty from '@/modules/widget/components/v2/shared/widget-empty.vue'
 import { parseAxisLabel } from '@/utils/reports'
-import { mapActions } from '@/shared/vuex/vuex.helpers'
 import { WIDGET_PERIOD_OPTIONS } from '@/modules/widget/widget-constants'
 import { toSentenceCase } from '@/utils/string'
 import pluralize from 'pluralize'
 
 const emit = defineEmits([
   'update:modelValue',
-  'update:period'
+  'update:period',
+  'on-export'
 ])
 const props = defineProps({
   modelValue: {
@@ -179,8 +183,6 @@ const pagination = ref({
   currentPage: 1,
   pageSize: 10
 })
-
-const { doExport } = mapActions(props.moduleName)
 
 onMounted(async () => {
   await getList({ isNewList: true })
@@ -271,7 +273,7 @@ const onLoadMore = async () => {
   pagination.value.currentPage =
     pagination.value.currentPage + 1
 
-  await getList()
+  await getList({ isNewList: false })
 }
 
 // Handle export list
@@ -282,11 +284,7 @@ const onExportClick = async () => {
     period: selectedPeriod.value
   })
 
-  try {
-    await doExport({ selected: true, list: list.value })
-  } catch (error) {
-    console.log(error)
-  }
+  emit('on-export')
 }
 
 const onRowClick = () => {

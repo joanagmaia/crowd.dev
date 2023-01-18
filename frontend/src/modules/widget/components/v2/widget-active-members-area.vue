@@ -53,10 +53,22 @@
             ...chartOptions('area')
           }"
           :granularity="granularity.value"
+          @on-view-more-click="onViewMoreClick"
         />
       </div>
     </template>
   </query-renderer>
+  <app-widget-drawer
+    v-if="drawerExpanded"
+    v-model="drawerExpanded"
+    :fetch-fn="getActiveMembers"
+    :date="drawerDate"
+    :granularity="granularity.value"
+    :show-date="true"
+    :title="drawerTitle"
+    module-name="member"
+    size="480px"
+  ></app-widget-drawer>
 </template>
 
 <script>
@@ -80,10 +92,13 @@ import { mapGetters } from '@/shared/vuex/vuex.helpers'
 import { chartOptions } from '@/modules/report/templates/template-report-charts'
 import {
   TOTAL_ACTIVE_MEMBERS_QUERY,
-  TOTAL_ACTIVE_RETURNING_MEMBERS_QUERY
+  TOTAL_ACTIVE_RETURNING_MEMBERS_QUERY,
+  ACTIVE_MEMBERS_FILTER_2
 } from '@/modules/widget/widget-queries'
 import AppWidgetLoading from '@/modules/widget/components/v2/shared/widget-loading.vue'
 import AppWidgetError from '@/modules/widget/components/v2/shared/widget-error.vue'
+import AppWidgetDrawer from '@/modules/widget/components/v2/shared/widget-drawer.vue'
+import { MemberService } from '@/modules/member/member-service'
 
 const props = defineProps({
   filters: {
@@ -95,19 +110,25 @@ const props = defineProps({
 const period = ref(SEVEN_DAYS_PERIOD_FILTER)
 const granularity = ref(DAILY_GRANULARITY_FILTER)
 
+const drawerExpanded = ref()
+const drawerDate = ref()
+const drawerTitle = ref()
+
 const datasets = computed(() => [
   {
     name: 'Total active members',
     borderColor: '#E94F2E',
     measure: 'Members.count',
-    granularity: granularity.value.value
+    granularity: granularity.value.value,
+    tooltipBtn: 'View members'
   },
   {
     name: 'Returning members',
     borderDash: [4, 4],
     borderColor: '#E94F2E',
     measure: 'Members.count',
-    granularity: granularity.value.value
+    granularity: granularity.value.value,
+    tooltipBtn: 'View members'
   }
 ])
 
@@ -127,6 +148,44 @@ const query = computed(() => {
     })
   ]
 })
+
+// Fetch function to pass to detail drawer
+const getActiveMembers = async ({ pagination }) => {
+  return await MemberService.list(
+    ACTIVE_MEMBERS_FILTER_2({
+      date: drawerDate.value,
+      granularity: granularity.value.value,
+      selectedPlatforms: props.filters.platform.value,
+      selectedHasTeamMembers: props.filters.teamMembers
+    }),
+    'joinedAt_DESC',
+    pagination.pageSize,
+    pagination.currentPage,
+    false
+  )
+}
+
+// Open drawer and set title and date
+const onViewMoreClick = (date) => {
+  window.analytics.track('Open report drawer', {
+    template: 'Members',
+    widget: 'Active members',
+    date,
+    granularity: granularity.value
+  })
+
+  drawerExpanded.value = true
+  drawerDate.value = date
+
+  // Title
+  if (granularity.value.value === 'week') {
+    drawerTitle.value = 'Weekly active members'
+  } else if (granularity.value.value === 'month') {
+    drawerTitle.value = 'Monthly active members'
+  } else {
+    drawerTitle.value = 'Daily active members'
+  }
+}
 
 const { cubejsApi } = mapGetters('widget')
 </script>

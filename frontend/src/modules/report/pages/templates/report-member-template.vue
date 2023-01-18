@@ -7,7 +7,10 @@
     ></div>
     <div v-else class="flex flex-col gap-8">
       <app-widget-total-members :filters="filters" />
-      <app-widget-active-members :filters="filters" />
+      <app-widget-active-members
+        :filters="filters"
+        :is-public-view="isPublicView"
+      />
       <app-widget-active-members-area :filters="filters" />
       <app-widget-active-leaderboard-members
         v-if="!isPublicView"

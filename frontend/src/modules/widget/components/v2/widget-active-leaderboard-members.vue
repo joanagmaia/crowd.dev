@@ -15,7 +15,7 @@
         <app-widget-period
           template="Members"
           widget="Leaderbord: Most active members"
-          :period="period"
+          :period="selectedPeriod"
           module="reports"
           @on-update="onUpdatePeriod"
         />
@@ -31,21 +31,39 @@
       <app-widget-error v-else-if="error" />
 
       <!-- Widget Chart -->
-      <app-widget-members-table
-        v-else
-        :members="activeMembers"
-        @on-row-click="onRowClick"
-      />
+      <div v-else>
+        <app-widget-members-table
+          :list="activeMembers"
+          @on-row-click="onRowClick"
+        />
+        <div class="flex justify-end">
+          <el-button
+            class="btn btn-link btn-link--primary mt-4 mb-8"
+            @click="handleDrawerOpen"
+            >View all</el-button
+          >
+        </div>
+      </div>
     </div>
 
     <app-widget-insight
       :description="`We recommend speaking with these members, as they went above and beyond in the last ${pluralize(
-        period.granularity,
-        period.value,
+        selectedPeriod.granularity,
+        selectedPeriod.value,
         true
       )}. They are probably eager to share their experiences and enthusiasm for your community.`"
     />
   </div>
+  <app-widget-drawer
+    v-if="drawerExpanded"
+    v-model="drawerExpanded"
+    :fetch-fn="getDetailedActiveMembers"
+    :title="drawerTitle"
+    :show-period="true"
+    :period="selectedPeriod"
+    module-name="member"
+    size="480px"
+  ></app-widget-drawer>
 </template>
 
 <script>
@@ -73,6 +91,7 @@ import AppWidgetLoading from '@/modules/widget/components/v2/shared/widget-loadi
 import AppWidgetError from '@/modules/widget/components/v2/shared/widget-error.vue'
 import AppWidgetEmpty from '@/modules/widget/components/v2/shared/widget-empty.vue'
 import { ACTIVE_LEADERBOARD_MEMBERS_FILTER } from '@/modules/widget/widget-queries'
+import AppWidgetDrawer from '@/modules/widget/components/v2/shared/widget-drawer.vue'
 
 const props = defineProps({
   platforms: {
@@ -85,10 +104,14 @@ const props = defineProps({
   }
 })
 
-const period = ref(SEVEN_DAYS_PERIOD_FILTER)
+const drawerExpanded = ref()
+const drawerTitle = ref()
+
+const selectedPeriod = ref(SEVEN_DAYS_PERIOD_FILTER)
 const activeMembers = ref([])
 const loading = ref(false)
 const error = ref(false)
+
 const empty = computed(
   () =>
     !loading.value &&
@@ -97,7 +120,9 @@ const empty = computed(
 )
 
 onMounted(async () => {
-  const response = await getActiveMembers(period.value)
+  const response = await getActiveMembers(
+    selectedPeriod.value
+  )
 
   activeMembers.value = response
 })
@@ -107,7 +132,7 @@ watch(
   () => [props.platforms, props.teamMembers],
   async ([platforms, teamMembers]) => {
     const response = await getActiveMembers(
-      period.value,
+      selectedPeriod.value,
       platforms,
       teamMembers
     )
@@ -120,11 +145,11 @@ const onUpdatePeriod = async (updatedPeriod) => {
   const response = await getActiveMembers(updatedPeriod)
 
   activeMembers.value = response
-  period.value = updatedPeriod
+  selectedPeriod.value = updatedPeriod
 }
 
 const getActiveMembers = async (
-  selectedPeriod,
+  period = selectedPeriod.value,
   platforms = props.platforms,
   teamMembers = props.teamMembers
 ) => {
@@ -134,7 +159,7 @@ const getActiveMembers = async (
   try {
     const response = await MemberService.list(
       ACTIVE_LEADERBOARD_MEMBERS_FILTER({
-        period: selectedPeriod,
+        period,
         selectedPlatforms: platforms,
         selectedHasTeamMembers: teamMembers
       }),
@@ -155,10 +180,40 @@ const getActiveMembers = async (
   }
 }
 
+// Fetch function to pass to detail drawer
+const getDetailedActiveMembers = async ({
+  pagination,
+  period = selectedPeriod.value
+}) => {
+  return await MemberService.list(
+    ACTIVE_LEADERBOARD_MEMBERS_FILTER({
+      period,
+      selectedPlatforms: props.platforms,
+      selectedHasTeamMembers: props.teamMembers
+    }),
+    'activeDaysCount_DESC',
+    pagination.pageSize,
+    pagination.currentPage,
+    false
+  )
+}
+
 const onRowClick = () => {
   window.analytics.track('Click table widget row', {
     template: 'Members',
     widget: 'Leaderbord: Most active members'
   })
+}
+
+// Open drawer and set title
+const handleDrawerOpen = async () => {
+  window.analytics.track('Open report drawer', {
+    template: 'Members',
+    widget: 'Most active members',
+    period: selectedPeriod.value
+  })
+
+  drawerExpanded.value = true
+  drawerTitle.value = 'Most active members'
 }
 </script>

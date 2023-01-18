@@ -50,6 +50,7 @@
                 :chart-options="customChartOptions"
                 :granularity="granularity"
                 :is-grid-min-max="true"
+                @on-view-more-click="onViewMoreClick"
               />
             </div>
           </div>
@@ -57,6 +58,17 @@
       </query-renderer>
     </div>
   </div>
+  <app-widget-drawer
+    v-if="drawerExpanded"
+    v-model="drawerExpanded"
+    :fetch-fn="getTotalMembers"
+    :date="drawerDate"
+    :granularity="granularity"
+    :show-date="true"
+    :title="drawerTitle"
+    module-name="member"
+    size="480px"
+  ></app-widget-drawer>
 </template>
 <script setup>
 import moment from 'moment'
@@ -75,9 +87,16 @@ import AppWidgetError from '@/modules/widget/components/v2/shared/widget-error.v
 
 import { mapGetters } from '@/shared/vuex/vuex.helpers'
 import { getTimeGranularityFromPeriod } from '@/utils/reports'
-import { TOTAL_MEMBERS_QUERY } from '@/modules/widget/widget-queries'
+import {
+  TOTAL_MEMBERS_QUERY,
+  TOTAL_MEMBERS_FILTER
+} from '@/modules/widget/widget-queries'
+import { MemberService } from '@/modules/member/member-service'
+import AppWidgetDrawer from '@/modules/widget/components/v2/shared/widget-drawer.vue'
 
 const customChartOptions = cloneDeep(chartOptions('area'))
+
+// Remove legend from the chart options
 customChartOptions.library.plugins.legend = {}
 
 const props = defineProps({
@@ -88,6 +107,9 @@ const props = defineProps({
 })
 
 const period = ref(SEVEN_DAYS_PERIOD_FILTER)
+const drawerExpanded = ref()
+const drawerDate = ref()
+const drawerTitle = ref()
 
 const granularity = computed(() =>
   getTimeGranularityFromPeriod(period.value)
@@ -98,7 +120,8 @@ const datasets = computed(() => {
       name: 'Total members',
       borderColor: '#E94F2E',
       measure: 'Members.cumulativeCount',
-      granularity: granularity.value
+      granularity: granularity.value,
+      tooltipBtn: 'View members'
     }
   ]
 })
@@ -156,6 +179,45 @@ const spliceFirstValue = (data) => {
     }
     return acc
   }, [])
+}
+
+// Fetch function to pass to detail drawer
+const getTotalMembers = async ({ pagination }) => {
+  return await MemberService.list(
+    TOTAL_MEMBERS_FILTER({
+      date: drawerDate.value,
+      granularity: granularity.value,
+      selectedPlatforms: props.filters.platform.value,
+      selectedHasTeamMembers: props.filters.teamMembers
+    }),
+    'joinedAt_DESC',
+    pagination.pageSize,
+    pagination.currentPage,
+    false
+  )
+}
+
+// Open drawer and set drawer title,
+// and detailed date
+const onViewMoreClick = (date) => {
+  window.analytics.track('Open report drawer', {
+    template: 'Members',
+    widget: 'Total members',
+    date,
+    granularity: granularity.value
+  })
+
+  drawerExpanded.value = true
+  drawerDate.value = date
+
+  // Title
+  if (granularity.value === 'week') {
+    drawerTitle.value = 'Weekly total members'
+  } else if (granularity.value === 'month') {
+    drawerTitle.value = 'Monthly total members'
+  } else {
+    drawerTitle.value = 'Daily total members'
+  }
 }
 </script>
 

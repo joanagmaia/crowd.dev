@@ -1,7 +1,24 @@
 <template>
-  <div class="my-8">
+  <div :class="{ 'my-8': !isDetailedView }">
+    <div v-if="isDetailedView">
+      <div class="flex justify-between items-center mb-2">
+        <div
+          class="uppercase text-2xs text-gray-400 font-semibold"
+        >
+          Member
+        </div>
+        <el-button
+          class="btn btn--transparent !h-8"
+          @click="onExportClick"
+          ><i class="ri-file-download-line" /><span
+            >Export CSV</span
+          ></el-button
+        >
+      </div>
+      <el-divider class="!my-0 border-gray-200" />
+    </div>
     <router-link
-      v-for="member in members"
+      v-for="member in list"
       :key="member.id"
       target="_blank"
       class="h-14 border-b border-gray-100 last:border-none grid grid-cols-8 gap-4 hover:bg-gray-50 hover:cursor-pointer group"
@@ -11,7 +28,12 @@
       }"
       @click="onRowClick"
     >
-      <div class="flex gap-3 items-center col-span-3">
+      <div
+        class="flex gap-3 items-center col-span-3"
+        :class="{
+          'col-span-4': isDetailedView
+        }"
+      >
         <app-avatar :entity="member" size="sm" />
         <div class="flex flex-col">
           <span class="font-medium text-xs text-gray-900">{{
@@ -26,6 +48,7 @@
       </div>
 
       <div
+        v-if="!isDetailedView"
         class="text-xs text-gray-500 italic flex items-center col-span-2"
       >
         {{ member.activeDaysCount }} days active
@@ -78,7 +101,7 @@
       <div
         class="inline-flex items-center justify-end mr-4 invisible group-hover:visible font-medium text-2xs text-gray-600 gap-1 col-start-8"
       >
-        <span>Profile</span>
+        <span v-if="!isDetailedView">Profile</span>
         <i class="ri-arrow-right-s-line" />
       </div>
     </router-link>
@@ -95,15 +118,23 @@ export default {
 import { defineProps, defineEmits } from 'vue'
 import AppSvg from '@/shared/svg/svg.vue'
 
-const emit = defineEmits(['onRowClick'])
+const emit = defineEmits(['onRowClick', 'onExportClick'])
 defineProps({
-  members: {
+  list: {
     type: Array,
     default: () => []
+  },
+  isDetailedView: {
+    type: Boolean,
+    default: false
   }
 })
 
 const onRowClick = () => {
   emit('onRowClick')
+}
+
+const onExportClick = () => {
+  emit('onExportClick')
 }
 </script>

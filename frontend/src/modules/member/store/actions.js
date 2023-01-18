@@ -13,13 +13,17 @@ export default {
 
   async doExport(
     { commit, getters, rootGetters, dispatch },
-    selected = false
+    { selected = false, list = [] }
   ) {
     let filter
+    const idsList = list.length
+      ? list
+      : getters.selectedRows
+
     if (selected) {
       filter = {
         id: {
-          in: [getters.selectedRows.map((i) => i.id)]
+          in: [idsList]
         }
       }
     } else {
@@ -52,8 +56,8 @@ export default {
         confirmButtonText: 'Send download link to e-mail',
         cancelButtonText: 'Cancel',
         badgeContent: selected
-          ? `${getters.selectedRows.length} member${
-              getters.selectedRows.length === 1 ? '' : 's'
+          ? `${idsList.length} member${
+              idsList.length === 1 ? '' : 's'
             }`
           : `View: ${getters.activeView.label}`,
         highlightedInfo: `${tenantCsvExportCount}/${planCsvExportMax} exports available in this plan used`

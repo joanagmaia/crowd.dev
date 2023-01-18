@@ -83,7 +83,7 @@ import AppWidgetError from '@/modules/widget/components/v2/shared/widget-error.v
 import AppWidgetDrawer from '@/modules/widget/components/v2/shared/widget-drawer.vue'
 import {
   ONE_DAY_PERIOD_FILTER,
-  SEVEN_DAYS_PERIOD_FILTER,
+  FOURTEEN_DAYS_PERIOD_FILTER,
   THIRTY_DAYS_PERIOD_FILTER,
   DAILY_GRANULARITY_FILTER,
   WEEKLY_GRANULARITY_FILTER,
@@ -122,9 +122,9 @@ const widgets = computed(() => {
     },
     {
       title: 'Active members this week',
-      filter: SEVEN_DAYS_PERIOD_FILTER,
+      filter: FOURTEEN_DAYS_PERIOD_FILTER,
       query: query(
-        SEVEN_DAYS_PERIOD_FILTER,
+        FOURTEEN_DAYS_PERIOD_FILTER,
         WEEKLY_GRANULARITY_FILTER
       ),
       period: 'week'

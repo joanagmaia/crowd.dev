@@ -458,13 +458,15 @@ class MemberRepository {
       periodEnd: filter.activityTimestampTo,
     }
 
-    if (filter.includeTeamMembers !== true) {
+    if (filter.isTeamMember === true) {
+      conditions.push("COALESCE((m.attributes->'isTeamMember'->'default')::boolean, false) = true")
+    } else if (filter.isTeamMember === false) {
       conditions.push("COALESCE((m.attributes->'isTeamMember'->'default')::boolean, false) = false")
     }
 
-    if (filter.platform && filter.platform.trim().length > 0) {
-      conditions.push('a.platform = :platform')
-      parameters.platform = filter.platform.trim()
+    if (filter.platforms && filter.platforms.length > 0) {
+      conditions.push('a.platform in (:platforms)')
+      parameters.platforms = filter.platforms
     }
 
     const conditionsString = conditions.join(' and ')

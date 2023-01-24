@@ -173,33 +173,6 @@ export const ACTIVE_LEADERBOARD_MEMBERS_FILTER = ({
   }
 }
 
-export const ACTIVE_MEMBERS_FILTER = ({
-  granularity,
-  selectedPlatforms,
-  selectedHasTeamMembers
-}) => {
-  const filters = [
-    {
-      lastActive: {
-        gte: moment()
-          .utc()
-          .startOf(granularity)
-          .toISOString()
-      }
-    }
-  ]
-
-  setApiFilters({
-    filters,
-    selectedHasTeamMembers,
-    selectedPlatforms
-  })
-
-  return {
-    and: filters
-  }
-}
-
 export const ACTIVE_MEMBERS_AREA_FILTER = ({
   date,
   granularity,

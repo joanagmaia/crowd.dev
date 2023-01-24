@@ -223,14 +223,14 @@ const handleDrawerOpen = async () => {
 
 const onExport = async () => {
   try {
-    await doExport(
-      false,
-      ACTIVE_LEADERBOARD_MEMBERS_FILTER({
+    await doExport({
+      selected: false,
+      customFilter: ACTIVE_LEADERBOARD_MEMBERS_FILTER({
         period: selectedPeriod.value,
         selectedPlatforms: props.platforms,
         selectedHasTeamMembers: props.teamMembers
       })
-    )
+    })
   } catch (error) {
     console.log(error)
   }

@@ -233,15 +233,15 @@ const onViewMoreClick = (date) => {
 
 const onExport = async () => {
   try {
-    await doExport(
-      false,
-      TOTAL_MEMBERS_FILTER({
+    await doExport({
+      selected: false,
+      customFilter: TOTAL_MEMBERS_FILTER({
         date: drawerDate.value,
         granularity: granularity.value,
         selectedPlatforms: props.filters.platform.value,
         selectedHasTeamMembers: props.filters.teamMembers
       })
-    )
+    })
   } catch (error) {
     console.log(error)
   }

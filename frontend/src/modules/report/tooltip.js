@@ -162,7 +162,8 @@ export const externalTooltipHandler = (
   tooltipEl.style.top =
     position.top +
     window.pageYOffset +
-    tooltip.caretY -
+    (tooltip.dataPoints?.[0]?.element?.y ||
+      tooltip.caretY) -
     tooltipEl.getBoundingClientRect().height -
     20 +
     'px'

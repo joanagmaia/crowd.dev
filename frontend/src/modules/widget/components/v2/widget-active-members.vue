@@ -62,6 +62,7 @@
       v-model="drawerExpanded"
       :fetch-fn="getActiveMembers"
       :title="drawerTitle"
+      :export-by-ids="true"
       module-name="member"
       size="480px"
       @on-export="onExport"
@@ -76,10 +77,7 @@ import {
   mapGetters,
   mapActions
 } from '@/shared/vuex/vuex.helpers'
-import {
-  TOTAL_ACTIVE_MEMBERS_QUERY,
-  ACTIVE_MEMBERS_FILTER
-} from '@/modules/widget/widget-queries'
+import { TOTAL_ACTIVE_MEMBERS_QUERY } from '@/modules/widget/widget-queries'
 import AppWidgetKpi from '@/modules/widget/components/v2/shared/widget-kpi.vue'
 import AppWidgetTitle from '@/modules/widget/components/v2/shared/widget-title.vue'
 import AppWidgetLoading from '@/modules/widget/components/v2/shared/widget-loading.vue'
@@ -94,6 +92,7 @@ import {
   MONTHLY_GRANULARITY_FILTER
 } from '@/modules/widget/widget-constants'
 import { MemberService } from '@/modules/member/member-service'
+import moment from 'moment'
 
 const props = defineProps({
   filters: {
@@ -172,17 +171,27 @@ const kpiPreviousValue = (resultSet) => {
 
 // Fetch function to pass to detail drawer
 const getActiveMembers = async ({ pagination }) => {
-  return await MemberService.list(
-    ACTIVE_MEMBERS_FILTER({
-      granularity: drawerGranularity.value,
-      selectedPlatforms: props.filters.platform.value,
-      selectedHasTeamMembers: props.filters.teamMembers
-    }),
-    'lastActive_DESC',
-    pagination.pageSize,
-    (pagination.currentPage - 1) * pagination.pageSize,
-    false
-  )
+  const activityTimestampFrom = moment()
+    .utc()
+    .startOf(drawerGranularity.value)
+
+  if (drawerGranularity.value === 'week') {
+    activityTimestampFrom.add(1, 'day')
+  }
+
+  return await MemberService.listActive({
+    platform: props.filters.platform.value,
+    isTeamMember: props.filters.teamMembers,
+    activityTimestampFrom,
+    activityTimestampTo: moment().utc(),
+    orderBy: 'activityCount_DESC',
+    offset: !pagination.count
+      ? (pagination.currentPage - 1) * pagination.pageSize
+      : 0,
+    limit: !pagination.count
+      ? pagination.pageSize
+      : pagination.count
+  })
 }
 
 // Open drawer and set title and period
@@ -190,7 +199,7 @@ const handleDrawerOpen = async (widget) => {
   window.analytics.track('Open report drawer', {
     template: 'Members',
     widget: widget.title,
-    period: widget.filter
+    period: widget.period
   })
 
   drawerExpanded.value = true
@@ -198,16 +207,9 @@ const handleDrawerOpen = async (widget) => {
   drawerGranularity.value = widget.period
 }
 
-const onExport = async () => {
+const onExport = async (ids) => {
   try {
-    await doExport(
-      false,
-      ACTIVE_MEMBERS_FILTER({
-        granularity: drawerGranularity.value,
-        selectedPlatforms: props.filters.platform.value,
-        selectedHasTeamMembers: props.filters.teamMembers
-      })
-    )
+    await doExport({ selected: true, customIds: ids })
   } catch (error) {
     console.log(error)
   }

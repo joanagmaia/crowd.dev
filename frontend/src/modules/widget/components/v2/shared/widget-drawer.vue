@@ -174,6 +174,10 @@ const props = defineProps({
   moduleName: {
     type: String,
     default: null
+  },
+  exportByIds: {
+    type: Boolean,
+    default: false
   }
 })
 
@@ -287,7 +291,28 @@ const onExportClick = async () => {
     period: selectedPeriod.value
   })
 
-  emit('on-export')
+  let ids
+
+  if (props.exportByIds) {
+    try {
+      if (count.value <= list.value.length) {
+        ids = list.value.map((l) => l.id)
+      } else {
+        const response = await props.fetchFn({
+          pagination: { count: count.value },
+          ...(props.showPeriod && {
+            period: selectedPeriod.value
+          })
+        })
+
+        ids = response.rows.map((r) => r.id)
+      }
+    } catch (e) {
+      console.error(e)
+    }
+  }
+
+  emit('on-export', ids)
 }
 
 const onRowClick = () => {

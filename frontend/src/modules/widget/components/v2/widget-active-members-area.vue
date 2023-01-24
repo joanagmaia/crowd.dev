@@ -66,6 +66,7 @@
     :granularity="granularity.value"
     :show-date="true"
     :title="drawerTitle"
+    :export-by-ids="true"
     module-name="member"
     size="480px"
     @on-export="onExport"
@@ -96,13 +97,13 @@ import {
 import { chartOptions } from '@/modules/report/templates/template-report-charts'
 import {
   TOTAL_ACTIVE_MEMBERS_QUERY,
-  TOTAL_ACTIVE_RETURNING_MEMBERS_QUERY,
-  ACTIVE_MEMBERS_AREA_FILTER
+  TOTAL_ACTIVE_RETURNING_MEMBERS_QUERY
 } from '@/modules/widget/widget-queries'
 import AppWidgetLoading from '@/modules/widget/components/v2/shared/widget-loading.vue'
 import AppWidgetError from '@/modules/widget/components/v2/shared/widget-error.vue'
 import AppWidgetDrawer from '@/modules/widget/components/v2/shared/widget-drawer.vue'
 import { MemberService } from '@/modules/member/member-service'
+import moment from 'moment'
 
 const props = defineProps({
   filters: {
@@ -166,18 +167,30 @@ const query = computed(() => {
 
 // Fetch function to pass to detail drawer
 const getActiveMembers = async ({ pagination }) => {
-  return await MemberService.list(
-    ACTIVE_MEMBERS_AREA_FILTER({
-      date: drawerDate.value,
-      granularity: granularity.value.value,
-      selectedPlatforms: props.filters.platform.value,
-      selectedHasTeamMembers: props.filters.teamMembers
-    }),
-    'joinedAt_DESC',
-    pagination.pageSize,
-    (pagination.currentPage - 1) * pagination.pageSize,
-    false
-  )
+  const startDate = moment(drawerDate.value).startOf('day')
+  const endDate = moment(drawerDate.value)
+
+  if (granularity.value.value === 'day') {
+    endDate.endOf('day')
+  } else if (granularity.value.value === 'week') {
+    endDate.startOf('day').add(6, 'day').endOf('day')
+  } else if (granularity.value.value === 'month') {
+    endDate.startOf('day').add(1, 'month')
+  }
+
+  return await MemberService.listActive({
+    platform: props.filters.platform.value,
+    isTeamMember: props.filters.teamMembers,
+    activityTimestampFrom: startDate.toISOString(),
+    activityTimestampTo: endDate.toISOString(),
+    orderBy: 'activityCount_DESC',
+    offset: !pagination.count
+      ? (pagination.currentPage - 1) * pagination.pageSize
+      : 0,
+    limit: !pagination.count
+      ? pagination.pageSize
+      : pagination.count
+  })
 }
 
 // Open drawer and set title and date
@@ -202,17 +215,9 @@ const onViewMoreClick = (date) => {
   }
 }
 
-const onExport = async () => {
+const onExport = async (ids) => {
   try {
-    await doExport(
-      false,
-      ACTIVE_MEMBERS_AREA_FILTER({
-        date: drawerDate.value,
-        granularity: granularity.value.value,
-        selectedPlatforms: props.filters.platform.value,
-        selectedHasTeamMembers: props.filters.teamMembers
-      })
-    )
+    await doExport({ selected: true, customIds: ids })
   } catch (error) {
     console.log(error)
   }

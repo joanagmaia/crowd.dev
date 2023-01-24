@@ -4,10 +4,7 @@
       :is="componentType"
       ref="chart"
       :data="data"
-      v-bind="{
-        ...customChartOptions,
-        dataset
-      }"
+      v-bind="customChartOptions"
     ></component>
   </div>
 </template>
@@ -78,7 +75,7 @@ customChartOptions.library.scales.x.ticks.callback = (
   value
 ) => parseAxisLabel(value, props.granularity)
 
-const dataset = ref(null)
+const dataset = ref({})
 
 const loading = computed(
   () => !props.resultSet?.loadResponses
@@ -106,7 +103,52 @@ const paintDataSet = () => {
   }
 }
 
-// Parse resultSet into data that can be consumed by area-chart component
+const buildSeriesDataset = (data, index) => {
+  const seriesDataset = {
+    ...dataset.value,
+    ...props.datasets[index]
+  }
+
+  // Default dataset colors
+  const {
+    pointHoverBorderColor,
+    borderColor,
+    backgroundColor
+  } = seriesDataset
+
+  // Colors to configure today on graph
+  const grey = 'rgba(180,180,180)'
+  const transparent = 'rgba(255,255,255,0)'
+
+  // Add customization to data points and line segments
+  // according to datapoint position
+  return {
+    ...seriesDataset,
+    pointHoverBorderColor: (ctx) => {
+      const isAfterPenultimatePoint =
+        ctx.dataIndex >= data.length - 2
+
+      return isAfterPenultimatePoint
+        ? grey
+        : pointHoverBorderColor
+    },
+    segment: {
+      borderColor: (ctx) => {
+        const isLastPoint =
+          ctx.p1DataIndex === data.length - 1
+
+        return isLastPoint ? grey : borderColor
+      },
+      backgroundColor: (ctx) => {
+        const isLastPoint =
+          ctx.p1DataIndex === data.length - 1
+
+        return isLastPoint ? transparent : backgroundColor
+      }
+    }
+  }
+}
+
 const series = (resultSet) => {
   // For line & area charts
   const pivot = resultSet.chartPivot()
@@ -135,7 +177,7 @@ const series = (resultSet) => {
         name: props.datasets[index].name,
         data,
         ...{
-          dataset: props.datasets[index]
+          dataset: buildSeriesDataset(data, index)
         }
       })
     })

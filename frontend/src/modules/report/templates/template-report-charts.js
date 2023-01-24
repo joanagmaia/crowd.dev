@@ -57,6 +57,9 @@ const defaultChartOptions = {
       intersect: false
     },
     plugins: {
+      verticalTodayLine: {
+        bottomMargin: 14
+      },
       tooltip: {
         position: 'nearest',
         enabled: false,
@@ -74,7 +77,7 @@ const defaultChartOptions = {
         display: true,
         position: 'bottom',
         align: 'center',
-        onClick: (click, legendItem, legend) => {
+        onClick: (_click, legendItem, legend) => {
           const datasets = legend.legendItems.map(
             (dataset) => dataset.text
           )
@@ -146,7 +149,8 @@ export function chartOptions(type) {
           pointBackgroundColor: 'transparent',
           pointHoverBorderColor: '#E94F2E',
           pointHoverBackgroundColor: '#fff',
-          pointHoverBorderWidth: '2'
+          pointHoverBorderWidth: '2',
+          spanGaps: true
         }
       }
     }

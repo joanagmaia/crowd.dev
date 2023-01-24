@@ -1,0 +1,53 @@
+import axios, { AxiosRequestConfig } from 'axios'
+import { handleLinkedinError } from './errorHandler'
+import { ILinkedInOrganization } from '../../types/linkedinTypes'
+import { PlatformType } from '../../../../types/integrationEnums'
+import getToken from '../pizzly/getToken'
+import { Logger } from '../../../../utils/logging'
+
+export const getOrganizations = async (
+  pizzlyId: string,
+  logger: Logger,
+): Promise<ILinkedInOrganization[]> => {
+  const config: AxiosRequestConfig<any> = {
+    method: 'get',
+    url: `https://api.linkedin.com/v2/organizationAcls`,
+    params: {
+      q: 'roleAssignee',
+      projection:
+        '(elements*(*,roleAssignee~(localizedFirstName,localizedLastName),organization~(id,localizedName,vanityName,logoV2(original~:playableStreams))))',
+    },
+    headers: {
+      'X-Restli-Protocol-Version': '2.0.0',
+    },
+  }
+  try {
+    logger.debug({ pizzlyId }, 'Fetching organizations from LinkedIn')
+
+    // Get an access token from Pizzly
+    const accessToken = await getToken(pizzlyId, PlatformType.LINKEDIN, logger)
+    config.params.oauth2_access_token = accessToken
+
+    const response = (await axios(config)).data
+
+    return response.elements.map((e) => {
+      let profilePictureUrl: string | undefined
+
+      if (e['organization~'].logoV2?.['original~']?.elements?.length > 0) {
+        const pictures = e['organization~'].logoV2['original~'].elements
+        profilePictureUrl = pictures[pictures.length - 1].identifiers[0].identifier
+      }
+
+      return {
+        id: e['organization~'].id,
+        name: e['organization~'].localizedName,
+        organizationUrn: e.organization,
+        vanityName: e['organization~'].vanityName,
+        profilePictureUrl,
+      }
+    })
+  } catch (err) {
+    const newErr = handleLinkedinError(err, config, { pizzlyId }, logger)
+    throw newErr
+  }
+}

@@ -48,7 +48,10 @@
             active</span
           >
           <span
-            v-else-if="member.organizations?.length"
+            v-else-if="
+              member.organizations?.length &&
+              !isDetailedView
+            "
             class="text-gray-500 text-2xs"
             >{{ member.organizations?.[0]?.name }}</span
           >

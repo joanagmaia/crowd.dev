@@ -196,7 +196,7 @@ const getActiveMembers = async ({ pagination }) => {
 // Open drawer and set title and date
 const onViewMoreClick = (date) => {
   window.analytics.track('Open report drawer', {
-    template: 'Members',
+    template: 'Members report',
     widget: 'Active members',
     date,
     granularity: granularity.value

@@ -212,7 +212,7 @@ const getDetailedActiveMembers = async ({
 
 const onRowClick = () => {
   window.analytics.track('Click table widget row', {
-    template: 'Members',
+    template: 'Members report',
     widget: 'Leaderbord: Most active members'
   })
 }
@@ -220,8 +220,8 @@ const onRowClick = () => {
 // Open drawer and set title
 const handleDrawerOpen = async () => {
   window.analytics.track('Open report drawer', {
-    template: 'Members',
-    widget: 'Most active members',
+    template: 'Members report',
+    widget: 'Leaderbord: Most active members',
     period: selectedPeriod.value
   })
 

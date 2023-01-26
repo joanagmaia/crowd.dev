@@ -269,7 +269,7 @@ const getList = async ({ isNewList }) => {
 // Reset pagination, fetch new list and select a new period
 const onPeriodOptionClick = async (option) => {
   window.analytics.track('Filter in report drawer', {
-    template: `${toSentenceCase(props.moduleName)}s`,
+    template: `${toSentenceCase(props.moduleName)}s report`,
     period: option
   })
 
@@ -292,8 +292,7 @@ const onLoadMore = async () => {
 // Export all items on the list from its ids
 const onExportClick = async () => {
   window.analytics.track('Export CSV in report drawer', {
-    template: `${toSentenceCase(props.moduleName)}s`,
-    period: selectedPeriod.value
+    template: `${toSentenceCase(props.moduleName)}s report`
   })
 
   let ids
@@ -322,7 +321,7 @@ const onExportClick = async () => {
 
 const onRowClick = () => {
   window.analytics.track('Click report drawer row', {
-    template: `${toSentenceCase(props.moduleName)}s`
+    template: `${toSentenceCase(props.moduleName)}s report`
   })
 }
 </script>

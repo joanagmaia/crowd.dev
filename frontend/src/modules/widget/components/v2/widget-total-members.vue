@@ -212,7 +212,7 @@ const getTotalMembers = async ({ pagination }) => {
 // and detailed date
 const onViewMoreClick = (date) => {
   window.analytics.track('Open report drawer', {
-    template: 'Members',
+    template: 'Members report',
     widget: 'Total members',
     date,
     granularity: granularity.value

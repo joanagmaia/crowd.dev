@@ -197,7 +197,7 @@ const getActiveMembers = async ({ pagination }) => {
 // Open drawer and set title and period
 const handleDrawerOpen = async (widget) => {
   window.analytics.track('Open report drawer', {
-    template: 'Members',
+    template: 'Members report',
     widget: widget.title,
     period: widget.period
   })

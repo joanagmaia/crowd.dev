@@ -90,6 +90,7 @@
         v-else
         :list="list"
         :is-detailed-view="true"
+        :show-active-days="showActiveDays"
         @on-row-click="onRowClick"
         @on-export-click="onExportClick"
       />
@@ -176,6 +177,10 @@ const props = defineProps({
     default: null
   },
   exportByIds: {
+    type: Boolean,
+    default: false
+  },
+  showActiveDays: {
     type: Boolean,
     default: false
   }

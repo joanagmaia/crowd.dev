@@ -60,7 +60,9 @@
     :fetch-fn="getDetailedActiveMembers"
     :title="drawerTitle"
     :show-period="true"
+    :export-by-ids="true"
     :period="selectedPeriod"
+    :show-active-days="true"
     module-name="member"
     size="480px"
     @on-export="onExport"
@@ -91,9 +93,9 @@ import pluralize from 'pluralize'
 import AppWidgetLoading from '@/modules/widget/components/v2/shared/widget-loading.vue'
 import AppWidgetError from '@/modules/widget/components/v2/shared/widget-error.vue'
 import AppWidgetEmpty from '@/modules/widget/components/v2/shared/widget-empty.vue'
-import { ACTIVE_LEADERBOARD_MEMBERS_FILTER } from '@/modules/widget/widget-queries'
 import AppWidgetDrawer from '@/modules/widget/components/v2/shared/widget-drawer.vue'
 import { mapActions } from '@/shared/vuex/vuex.helpers'
+import moment from 'moment'
 
 const props = defineProps({
   platforms: {
@@ -161,17 +163,18 @@ const getActiveMembers = async (
   error.value = false
 
   try {
-    const response = await MemberService.list(
-      ACTIVE_LEADERBOARD_MEMBERS_FILTER({
-        period,
-        selectedPlatforms: platforms,
-        selectedHasTeamMembers: teamMembers
-      }),
-      'activeDaysCount_DESC',
-      10,
-      0,
-      false
-    )
+    const response = await MemberService.listActive({
+      platform: platforms,
+      isTeamMember: teamMembers,
+      activityTimestampFrom: moment()
+        .utc()
+        .subtract(period.value, period.granularity)
+        .toISOString(),
+      activityTimestampTo: moment().utc(),
+      orderBy: 'activeDaysCount_DESC',
+      offset: 0,
+      limit: 10
+    })
 
     loading.value = false
 
@@ -189,17 +192,22 @@ const getDetailedActiveMembers = async ({
   pagination,
   period = selectedPeriod.value
 }) => {
-  return await MemberService.list(
-    ACTIVE_LEADERBOARD_MEMBERS_FILTER({
-      period,
-      selectedPlatforms: props.platforms,
-      selectedHasTeamMembers: props.teamMembers
-    }),
-    'activeDaysCount_DESC',
-    pagination.pageSize,
-    (pagination.currentPage - 1) * pagination.pageSize,
-    false
-  )
+  return await MemberService.listActive({
+    platform: props.platforms,
+    isTeamMember: props.teamMembers,
+    activityTimestampFrom: moment()
+      .utc()
+      .subtract(period.value, period.granularity)
+      .toISOString(),
+    activityTimestampTo: moment().utc(),
+    orderBy: 'activeDaysCount_DESC',
+    offset: !pagination.count
+      ? (pagination.currentPage - 1) * pagination.pageSize
+      : 0,
+    limit: !pagination.count
+      ? pagination.pageSize
+      : pagination.count
+  })
 }
 
 const onRowClick = () => {
@@ -221,16 +229,9 @@ const handleDrawerOpen = async () => {
   drawerTitle.value = 'Most active members'
 }
 
-const onExport = async () => {
+const onExport = async (ids) => {
   try {
-    await doExport({
-      selected: false,
-      customFilter: ACTIVE_LEADERBOARD_MEMBERS_FILTER({
-        period: selectedPeriod.value,
-        selectedPlatforms: props.platforms,
-        selectedHasTeamMembers: props.teamMembers
-      })
-    })
+    await doExport({ selected: true, customIds: ids })
   } catch (error) {
     console.log(error)
   }

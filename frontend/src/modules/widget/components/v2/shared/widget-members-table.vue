@@ -40,7 +40,15 @@
             member.displayName
           }}</span>
           <span
-            v-if="member.organizations?.length"
+            v-if="isDetailedView && showActiveDays"
+            class="text-gray-500 text-2xs italic"
+            >{{
+              pluralize('day', member.activeDaysCount, true)
+            }}
+            active</span
+          >
+          <span
+            v-else-if="member.organizations?.length"
             class="text-gray-500 text-2xs"
             >{{ member.organizations?.[0]?.name }}</span
           >
@@ -117,6 +125,7 @@ export default {
 <script setup>
 import { defineProps, defineEmits } from 'vue'
 import AppSvg from '@/shared/svg/svg.vue'
+import pluralize from 'pluralize'
 
 const emit = defineEmits(['onRowClick', 'onExportClick'])
 defineProps({
@@ -125,6 +134,10 @@ defineProps({
     default: () => []
   },
   isDetailedView: {
+    type: Boolean,
+    default: false
+  },
+  showActiveDays: {
     type: Boolean,
     default: false
   }

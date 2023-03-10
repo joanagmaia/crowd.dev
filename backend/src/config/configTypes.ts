@@ -169,7 +169,7 @@ export interface CubeJSConfiguration {
   jwtExpiry: string
 }
 
-export interface PizzlyConfiguration {
+export interface NangoConfiguration {
   url: string
   secretKey: string
 }
@@ -201,4 +201,8 @@ export interface UnleashConfiguration {
 
 export interface SlackAlertingConfiguration {
   url: string
+}
+
+export interface StackExchangeConfiguration {
+  key: string
 }

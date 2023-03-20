@@ -94,9 +94,9 @@ async function qdrantSyncWorker(tenantId): Promise<void> {
 
   const activities = await ActivityRepository.findForQdrant(createdAt, userContext)
 
-  console.log('Count', count)
-  console.log('createdAt', createdAt)
-  console.log('activities', activities.length)
+  log.info('Count', count)
+  log.info('createdAt', createdAt)
+  log.info('activities', activities.length)
 
   // Split the activities list into chunks of N
   const chunkSize = 100
@@ -114,7 +114,7 @@ async function qdrantSyncWorker(tenantId): Promise<void> {
         vector: await embed(activity),
       })
     }
-    console.log(await upsertPoints(points))
+    log.info(await upsertPoints(points))
   }
 }
 

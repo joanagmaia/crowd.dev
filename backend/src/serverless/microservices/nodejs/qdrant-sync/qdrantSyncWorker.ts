@@ -96,6 +96,7 @@ async function qdrantSyncWorker(tenantId): Promise<void> {
 
   console.log('Count', count)
   console.log('createdAt', createdAt)
+  console.log('activities', activities.length)
 
   // Split the activities list into chunks of N
   const chunkSize = 100

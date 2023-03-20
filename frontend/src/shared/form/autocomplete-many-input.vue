@@ -352,7 +352,6 @@ export default {
         }, 150)
       }
     },
-
     onSelectMouseLeave
   }
 }

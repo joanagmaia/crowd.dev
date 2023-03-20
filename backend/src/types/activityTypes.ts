@@ -66,6 +66,11 @@ export enum RedditActivityType {
   COMMENT = 'comment',
 }
 
+export enum StackOverflowActivityType {
+  QUESTION = 'question',
+  ANSWER = 'answer',
+}
+
 export enum SlackActivityType {
   JOINED_CHANNEL = 'channel_joined',
   MESSAGE = 'message',

@@ -348,7 +348,7 @@ export const DEFAULT_ACTIVITY_TYPE_SETTINGS: DefaultActivityTypes = {
   [PlatformType.STACKOVERFLOW]: {
     question: {
       default: 'Asked a question {self}',
-      short: 'Asked a question',
+      short: 'asked a question',
       channel: '',
       formatter: {
         self: defaultStackoverflowFormatter,
@@ -356,7 +356,7 @@ export const DEFAULT_ACTIVITY_TYPE_SETTINGS: DefaultActivityTypes = {
     },
     answer: {
       default: 'Answered a question {self}',
-      short: 'Answered a question',
+      short: 'answered a question',
       channel: '',
       formatter: {
         self: defaultStackoverflowFormatter,

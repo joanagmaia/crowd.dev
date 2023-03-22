@@ -40,7 +40,7 @@ const activityMessage = computed(() => {
 <style lang="scss">
 .activity-message {
   * {
-    @apply inline-block align-middle;
+    @apply inline-block align-bottom;
   }
 
   a,

@@ -30,7 +30,6 @@ const serviceLogger = createServiceLogger()
 const app = express()
 
 const server = http.createServer(app)
-
 setImmediate(async () => {
   const redis = await createRedisClient(true)
 

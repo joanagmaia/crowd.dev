@@ -23,9 +23,12 @@ module.exports = {
       process.env.NODE_ENV === 'production'
         ? 'warn'
         : 'off',
-    semi: 'off',
-    'vue/no-v-html': 'off',
+    semi: 'warn',
+    'comma-dangle': 'warn',
     'vue/no-unused-components': 'warn',
+    'vue/html-indent': 'warn',
+    'vue/html-self-closing': 'warn',
+    'vue/no-v-html': 'off',
     'no-unused-vars': 'off',
     'import/prefer-default-export': 'off',
     'class-methods-use-this': 'off',

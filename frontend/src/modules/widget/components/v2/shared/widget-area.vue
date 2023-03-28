@@ -14,7 +14,6 @@ import {
   computed, defineEmits, defineProps, onMounted, ref,
 } from 'vue';
 import cloneDeep from 'lodash/cloneDeep';
-import { parseAxisLabel } from '@/utils/reports';
 import { externalTooltipHandler } from '@/modules/report/tooltip';
 
 const componentType = 'area-chart';
@@ -45,15 +44,7 @@ const props = defineProps({
 
 const customChartOptions = cloneDeep(props.chartOptions);
 
-// Customize x ticks
-if (!customChartOptions.library.scales.x.ticks.callback) {
-  customChartOptions.library.scales.x.ticks.callback = (
-    value,
-  ) => parseAxisLabel(value, props.granularity);
-}
-
 const dataset = ref({});
-
 const loading = computed(
   () => !props.resultSet?.loadResponses,
 );
@@ -114,7 +105,7 @@ const series = (resultSet) => {
         : `${index},`; // has more than 1 dataset
       const computedData = pivot.map((p) => [
         p.x,
-        p[`${prefix}${props.datasets[index].measure}`],
+        p[`${prefix}${props.datasets[index].measure}`] || 0,
       ]);
 
       // Only show bottom and top grid lines by setting
@@ -133,6 +124,20 @@ const series = (resultSet) => {
     });
   }
 
+  // Search for hidden datasets to add to the available series
+  const hiddenDatasets = props.datasets
+    .filter((d) => d.hidden)
+    .map((d) => ({
+      name: d.name,
+      ...{
+        dataset: d,
+      },
+    }));
+
+  if (hiddenDatasets.length) {
+    computedSeries.push(...hiddenDatasets);
+  }
+
   return computedSeries;
 };
 
@@ -140,7 +145,6 @@ const data = computed(() => {
   if (loading.value) {
     return [];
   }
-
   return series(props.resultSet);
 });
 
@@ -148,11 +152,10 @@ const paintDataSet = () => {
   const canvas = document.querySelector(
     '.cube-widget-chart canvas',
   );
-  if (canvas && props.chartOptions?.computeDataset) {
-    dataset.value = props.chartOptions.computeDataset(canvas);
+  if (canvas && customChartOptions?.computeDataset) {
+    dataset.value = customChartOptions.computeDataset(canvas);
   }
 };
-
 // Customize external tooltip
 // Handle View more button click
 // Get dataPoint from tooltip and extract the date
@@ -163,7 +166,6 @@ customChartOptions.library.plugins.tooltip.external = (
     (p) => p.datasetIndex === 0,
   );
   const date = data.value[0].data[point.dataIndex][0];
-
   emit('on-view-more-click', date);
 });
 

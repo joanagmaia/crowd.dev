@@ -12,29 +12,20 @@
           :class="{ 'mb-8': !loading && !error }"
         >
           <div class="flex gap-1">
-            <app-widget-granularity
-              template="Members"
-              widget="Active members"
-              :granularity="granularity"
-              @on-update="
-                (updatedGranularity) =>
-                  (granularity = updatedGranularity)
-              "
-            />
             <app-widget-title
-              title="Active members"
-              description="Members who performed any kind of activity in a given time period"
+              title="Monthly active contributors"
             />
           </div>
           <app-widget-period
-            template="Members"
-            widget="Active members"
+            :template="
+              PRODUCT_COMMUNITY_FIT_REPORT.nameAsId
+            "
+            widget="Monthly active contributors"
             :period="period"
             :granularity="granularity"
+            :options="MONTHLY_WIDGET_PERIOD_OPTIONS"
             module="reports"
-            @on-update="
-              (updatedPeriod) => (period = updatedPeriod)
-            "
+            @on-update="onUpdatePeriod"
           />
         </div>
 
@@ -49,9 +40,7 @@
           v-else
           :datasets="datasets"
           :result-set="resultSet"
-          :chart-options="{
-            ...chartOptions('area'),
-          }"
+          :chart-options="widgetChartOptions"
           :granularity="granularity.value"
           @on-view-more-click="onViewMoreClick"
         />
@@ -67,7 +56,7 @@
     :show-date="true"
     :title="drawerTitle"
     :export-by-ids="true"
-    module-name="member"
+    :template="PRODUCT_COMMUNITY_FIT_REPORT.nameAsId"
     size="480px"
     @on-export="onExport"
   />
@@ -79,25 +68,26 @@ import { QueryRenderer } from '@cubejs-client/vue3';
 import moment from 'moment';
 import AppWidgetTitle from '@/modules/widget/components/v2/shared/widget-title.vue';
 import AppWidgetPeriod from '@/modules/widget/components/v2/shared/widget-period.vue';
-import AppWidgetGranularity from '@/modules/widget/components/v2/shared/widget-granularity.vue';
 import AppWidgetArea from '@/modules/widget/components/v2/shared/widget-area.vue';
 import {
-  DAILY_GRANULARITY_FILTER,
-  SEVEN_DAYS_PERIOD_FILTER,
+  ALL_TIME_PERIOD_FILTER,
+  MONTHLY_GRANULARITY_FILTER,
+  MONTHLY_WIDGET_PERIOD_OPTIONS,
+  SIX_MONTHS_PERIOD_FILTER,
+  YEARLY_GRANULARITY_FILTER,
 } from '@/modules/widget/widget-constants';
-import {
-  mapGetters,
-  mapActions,
-} from '@/shared/vuex/vuex.helpers';
 import { chartOptions } from '@/modules/report/templates/template-report-charts';
-import {
-  TOTAL_ACTIVE_MEMBERS_QUERY,
-  TOTAL_ACTIVE_RETURNING_MEMBERS_QUERY,
-} from '@/modules/widget/widget-queries';
 import AppWidgetLoading from '@/modules/widget/components/v2/shared/widget-loading.vue';
 import AppWidgetError from '@/modules/widget/components/v2/shared/widget-error.vue';
+import { TOTAL_MONTHLY_ACTIVE_CONTRIBUTORS } from '@/modules/widget/widget-queries';
+import {
+  mapActions,
+  mapGetters,
+} from '@/shared/vuex/vuex.helpers';
 import AppWidgetDrawer from '@/modules/widget/components/v2/shared/widget-drawer.vue';
 import { MemberService } from '@/modules/member/member-service';
+import { PRODUCT_COMMUNITY_FIT_REPORT } from '@/modules/report/templates/template-reports';
+import { parseAxisLabel } from '@/utils/reports';
 
 const props = defineProps({
   filters: {
@@ -110,71 +100,118 @@ const props = defineProps({
   },
 });
 
-const period = ref(SEVEN_DAYS_PERIOD_FILTER);
-const granularity = ref(DAILY_GRANULARITY_FILTER);
-
+const period = ref(SIX_MONTHS_PERIOD_FILTER);
+const granularity = ref(MONTHLY_GRANULARITY_FILTER);
 const drawerExpanded = ref();
 const drawerDate = ref();
 const drawerTitle = ref();
 
-const { doExport } = mapActions('member');
+const widgetChartOptions = chartOptions('area', {
+  ySuggestedMax: 200,
+  yMaxTicksLimit: 11,
+  yStepSize: 50,
+  yAfterBuildTicks: (axis) => {
+    const hasMinTick = axis.ticks.some((t) => t.value === 50);
+    const hasMaxTick = axis.ticks.some((t) => t.value === 100);
+
+    const { ticks } = axis;
+
+    if (!hasMinTick) {
+      ticks.push({
+        label: '50',
+        value: 50,
+      });
+    }
+
+    if (!hasMaxTick) {
+      ticks.push({
+        label: '100',
+        value: 100,
+      });
+    }
+
+    Object.assign(axis, {
+      ticks,
+    });
+  },
+  xTicksCallback: (
+    value,
+  ) => parseAxisLabel(value, granularity.value.value),
+  annotationPlugin: {
+    annotations: {
+      idealRange: {
+        backgroundColor: 'rgb(250, 237, 234)',
+        yMin: 50,
+        yMax: 100,
+        borderColor: 'transparent',
+        type: 'box',
+        drawTime: 'beforeDraw',
+      },
+    },
+  },
+});
+
 const { cubejsApi } = mapGetters('widget');
+const { doExport } = mapActions('member');
 
 const datasets = computed(() => [
   {
-    name: 'Total active members',
+    name: 'Monthly active contributors',
     borderColor: '#E94F2E',
+    backgroundColor: 'transparent',
     measure: 'Members.count',
     granularity: granularity.value.value,
     ...(!props.isPublicView && {
       tooltipBtn: 'View members',
     }),
+    showLegend: false,
   },
   {
-    name: 'Returning members',
-    borderDash: [4, 4],
-    borderColor: '#E94F2E',
-    measure: 'Members.count',
-    granularity: granularity.value.value,
-    ...(!props.isPublicView && {
-      tooltipBtn: 'View members',
-    }),
+    name: 'Product-Community fit',
+    backgroundColor: 'rgb(250, 237, 234)',
+    borderColor: 'transparent',
+    pointStyle: 'rect',
+    hidden: true,
   },
 ]);
 
-const query = computed(() => [
-  TOTAL_ACTIVE_MEMBERS_QUERY({
-    period: period.value,
-    granularity: granularity.value,
-    selectedPlatforms: props.filters.platform.value,
-    selectedHasTeamMembers: props.filters.teamMembers,
-  }),
-  TOTAL_ACTIVE_RETURNING_MEMBERS_QUERY({
-    period: period.value,
-    granularity: granularity.value,
-    selectedPlatforms: props.filters.platform.value,
-    selectedHasTeamMembers: props.filters.teamMembers,
-  }),
-]);
+const query = computed(() => TOTAL_MONTHLY_ACTIVE_CONTRIBUTORS({
+  period: period.value,
+  granularity: granularity.value,
+  selectedHasTeamMembers: props.filters.teamMembers,
+}));
+
+const onUpdatePeriod = (updatedPeriod) => {
+  period.value = updatedPeriod;
+
+  if (
+    updatedPeriod.label === ALL_TIME_PERIOD_FILTER.label
+  ) {
+    granularity.value = YEARLY_GRANULARITY_FILTER;
+  } else {
+    granularity.value = MONTHLY_GRANULARITY_FILTER;
+  }
+};
 
 // Fetch function to pass to detail drawer
 const getActiveMembers = async ({ pagination }) => {
   const startDate = moment(drawerDate.value).startOf('day');
   const endDate = moment(drawerDate.value);
 
-  if (granularity.value.value === 'day') {
-    endDate.endOf('day');
-  } else if (granularity.value.value === 'week') {
-    endDate.startOf('day').add(6, 'day').endOf('day');
-  } else if (granularity.value.value === 'month') {
+  if (granularity.value.value === 'month') {
     endDate.startOf('day').add(1, 'month');
   }
 
-  const res = await MemberService.listActive({
-    platform: props.filters.platform.value,
+  if (granularity.value.value === 'year') {
+    endDate.startOf('day').add(1, 'year');
+  }
+
+  return MemberService.listActive({
+    platform: [],
     isTeamMember: props.filters.teamMembers,
     activityTimestampFrom: startDate.toISOString(),
     activityTimestampTo: endDate.toISOString(),
+    activityIsContribution: true,
     orderBy: 'activityCount_DESC',
     offset: !pagination.count
       ? (pagination.currentPage - 1) * pagination.pageSize
@@ -183,30 +220,21 @@ const getActiveMembers = async ({ pagination }) => {
       ? pagination.pageSize
       : pagination.count,
   });
-
-  return res;
 };
 
-// Open drawer and set title and date
+// Open drawer and set drawer title,
+// and detailed date
 const onViewMoreClick = (date) => {
   window.analytics.track('Open report drawer', {
-    template: 'Members report',
-    widget: 'Active members',
+    template: PRODUCT_COMMUNITY_FIT_REPORT.nameAsId,
+    widget: 'Monthly active contributors',
     date,
     granularity: granularity.value,
   });
 
   drawerExpanded.value = true;
   drawerDate.value = date;
-
-  // Title
-  if (granularity.value.value === 'week') {
-    drawerTitle.value = 'Weekly active members';
-  } else if (granularity.value.value === 'month') {
-    drawerTitle.value = 'Monthly active members';
-  } else {
-    drawerTitle.value = 'Daily active members';
-  }
+  drawerTitle.value = 'Monthly active contributors';
 };
 
 const onExport = async ({ ids, count }) => {

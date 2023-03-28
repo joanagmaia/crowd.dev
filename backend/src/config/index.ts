@@ -28,6 +28,7 @@ import {
   StackExchangeConfiguration,
   SlackAlertingConfiguration,
   SampleDataConfiguration,
+  QdrantSyncConfiguration,
 } from './configTypes'
 
 // TODO-kube
@@ -247,4 +248,13 @@ export const SAMPLE_DATA_CONFIG: SampleDataConfiguration = KUBE_MODE
   ? config.get<SampleDataConfiguration>('sampleData')
   : {
       tenantId: process.env.SAMPLE_DATA_TENANT_ID,
+    }
+
+export const QDRANT_SYNC_CONFIG: QdrantSyncConfiguration = KUBE_MODE
+  ? config.get<QdrantSyncConfiguration>('qdrantSync')
+  : {
+    qdrantHost: process.env.QDRANT_HOST,
+    qdrantApiKey: process.env.QDRANT_API_KEY,
+    qdrantCollection: process.env.QDRANT_COLLECTION,
+    openaiApiKey: process.env.OPENAI_API_KEY,
     }

@@ -23,6 +23,11 @@ export default (sequelize, DataTypes) => {
         allowNull: false,
         defaultValue: {},
       },
+      aiSupportSettings: {
+        type: DataTypes.JSONB,
+        allowNull: false,
+        defaultValue: {},
+      },
       attributeSettings: {
         type: DataTypes.JSONB,
         allowNull: false,

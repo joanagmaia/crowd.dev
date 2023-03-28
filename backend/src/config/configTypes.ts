@@ -212,3 +212,11 @@ export interface SlackAlertingConfiguration {
 export interface SampleDataConfiguration {
   tenantId: string
 }
+
+export interface QdrantSyncConfiguration {
+  qdrantHost: string
+  qdrantApiKey: string
+  qdrantCollection: string
+  openaiApiKey: string
+}
+

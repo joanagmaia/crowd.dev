@@ -8,6 +8,7 @@ import downgradeExpiredPlans from './downgradeExpiredPlans'
 import eagleEyeEmailDigestTicks from './eagleEyeEmailDigestTicks'
 import integrationDataChecker from './integrationDataChecker'
 import refreshSampleData from './refreshSampleData'
+import syncDataToQdrant from './syncDataToQdrant'
 
 const jobs: CrowdJob[] = [
   weeklyAnalyticsEmailsCoordinator,
@@ -19,6 +20,7 @@ const jobs: CrowdJob[] = [
   eagleEyeEmailDigestTicks,
   integrationDataChecker,
   refreshSampleData,
+  syncDataToQdrant,
 ]
 
 export default jobs

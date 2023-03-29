@@ -115,6 +115,33 @@ const period = ref(SIX_MONTHS_PERIOD_FILTER);
 const granularity = ref(MONTHLY_GRANULARITY_FILTER);
 const average = ref(0);
 
+const getIdealRange = () => {
+  if (average.value < 20) {
+    return {
+      min: 0,
+      max: 20,
+    };
+  } if (average.value >= 20 && average.value <= 50) {
+    return {
+      min: 20,
+      max: 50,
+    };
+  } if (average.value > 50 && average.value <= 100) {
+    return {
+      min: 51,
+      max: 100,
+    };
+  } if (average.value > 100 && average.value <= 200) {
+    return {
+      min: 101,
+      max: 200,
+    };
+  }
+  return {
+    min: 200,
+    max: 250,
+  };
+};
 const benchmarkChartOptions = computed(() => chartOptions('bar', {
   clip: true,
   xTicks: false,
@@ -226,8 +253,8 @@ const benchmarkChartOptions = computed(() => chartOptions('bar', {
     annotations: {
       idealRange: {
         backgroundColor: 'rgb(250, 237, 234)',
-        yMin: 100,
-        yMax: 200,
+        yMin: getIdealRange().min,
+        yMax: getIdealRange().max,
         borderColor: 'transparent',
         type: 'box',
         drawTime: 'beforeDraw',

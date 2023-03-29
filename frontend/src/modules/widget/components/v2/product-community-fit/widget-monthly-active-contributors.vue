@@ -111,7 +111,7 @@ const yType = ref('linear');
 const yMaxTicksLimit = ref(11);
 const ySuggestedMax = ref(200);
 const highestNumber = ref(0);
-const shouldUseLogarithmicScale = computed(() => highestNumber.value >= 200);
+const shouldUseLogarithmicScale = computed(() => highestNumber.value >= 800);
 
 const widgetChartOptions = computed(() => chartOptions('area', {
   ySuggestedMax: ySuggestedMax.value,
@@ -127,18 +127,28 @@ const widgetChartOptions = computed(() => chartOptions('area', {
       { label: '100', value: 100 },
     ];
 
-    // If scale is linear, add these 2 extra ticks
-    const linearTicks = [
-      { label: '150', value: 150 },
-      { label: '200', value: 200 },
-    ];
+    const defaultLinearTick = { label: '150', value: 150 };
+    const defaultLogarithmicTicks = { label: '10', value: 10 };
 
     // Depending on the scale, push new ticks
+    // For scale, we will be adding hundreths until the maximum value
     // For logarithmic, we will be calculating base 10 powers
     // until the maximum order of magniture was reached
     if (!shouldUseLogarithmicScale.value) {
-      ticks.push(...linearTicks);
+      ticks.push(defaultLinearTick);
+
+      const magnitude = Math.ceil(highestNumber.value / 100);
+
+      for (let i = 2; i <= magnitude; i += 1) {
+        const newTickValue = 100 * i;
+
+        ticks.push({
+          label: `${newTickValue}`,
+          value: newTickValue,
+        });
+      }
     } else {
+      ticks.splice(1, 0, defaultLogarithmicTicks);
       yType.value = 'customLogarithmic';
 
       const magnitude = Math.floor(Math.log10(highestNumber.value));
@@ -147,6 +157,11 @@ const widgetChartOptions = computed(() => chartOptions('area', {
         const newTickValue = 10 ** i;
 
         if ((newTickValue) >= 1000) {
+          ticks.push({
+            label: `${newTickValue / 2}`,
+            value: newTickValue / 2,
+          });
+
           ticks.push({
             label: `${newTickValue}`,
             value: newTickValue,

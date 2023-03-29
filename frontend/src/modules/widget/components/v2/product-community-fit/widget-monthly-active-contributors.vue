@@ -136,6 +136,7 @@ const widgetChartOptions = computed(() => chartOptions('area', {
     // until the maximum order of magniture was reached
     if (!shouldUseLogarithmicScale.value) {
       ticks.push(defaultLinearTick);
+      yType.value = 'linear';
 
       const magnitude = Math.ceil(highestNumber.value / 100);
 

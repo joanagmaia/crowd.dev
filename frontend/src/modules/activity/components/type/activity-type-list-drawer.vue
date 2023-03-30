@@ -25,7 +25,7 @@
               <div
                 v-for="(
                   activityTypes, platform
-                ) in types.custom"
+                ) in types?.custom"
                 :key="platform"
               >
                 <app-activity-type-list-item
@@ -83,7 +83,7 @@
                 :key="integration.platform"
               >
                 <app-activity-type-list-item
-                  v-for="(settings, type) in types.default[
+                  v-for="(settings, type) in types?.default[
                     integration.platform
                   ]"
                   :key="type"

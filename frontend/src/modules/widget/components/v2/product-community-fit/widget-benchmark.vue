@@ -62,7 +62,7 @@
       <template #description>
         <span>Considering the contribution history of over
           150,000 open-source repositories, we come to the
-          conclusion that you {{ average < 20 ? 'were close to reach Early signals of Product-Community Fit' : 'had' }}
+          conclusion that you {{ average < 20 ? 'weren\'t able to have Early signals of Product-Community Fit' : 'had' }}
           <span v-if="average >= 20" class="font-medium">{{ getInsightContent }}</span>{{
             period.label === 'All time'
               ? ' since the beginning of your community.'

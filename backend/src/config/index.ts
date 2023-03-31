@@ -29,6 +29,7 @@ import {
   SlackAlertingConfiguration,
   SampleDataConfiguration,
   QdrantSyncConfiguration,
+  IntegrationProcessingConfiguration,
 } from './configTypes'
 
 // TODO-kube
@@ -258,3 +259,6 @@ export const QDRANT_SYNC_CONFIG: QdrantSyncConfiguration = KUBE_MODE
     qdrantCollection: process.env.QDRANT_COLLECTION,
     openaiApiKey: process.env.OPENAI_API_KEY,
     }
+
+export const INTEGRATION_PROCESSING_CONFIG: IntegrationProcessingConfiguration =
+    config.get<IntegrationProcessingConfiguration>('integrationProcessing')

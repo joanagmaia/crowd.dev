@@ -219,4 +219,6 @@ export interface QdrantSyncConfiguration {
   qdrantCollection: string
   openaiApiKey: string
 }
-
+export interface IntegrationProcessingConfiguration {
+  maxRetries: number
+}

@@ -43,6 +43,7 @@
           :chart-options="widgetChartOptions"
           :granularity="granularity.value"
           @on-view-more-click="onViewMoreClick"
+          @on-highest-number-calculation="onHighestNumberCalculation"
         />
       </div>
     </template>
@@ -70,11 +71,9 @@ import AppWidgetTitle from '@/modules/widget/components/v2/shared/widget-title.v
 import AppWidgetPeriod from '@/modules/widget/components/v2/shared/widget-period.vue';
 import AppWidgetArea from '@/modules/widget/components/v2/shared/widget-area.vue';
 import {
-  ALL_TIME_PERIOD_FILTER,
   MONTHLY_GRANULARITY_FILTER,
   MONTHLY_WIDGET_PERIOD_OPTIONS,
   SIX_MONTHS_PERIOD_FILTER,
-  YEARLY_GRANULARITY_FILTER,
 } from '@/modules/widget/widget-constants';
 import { chartOptions } from '@/modules/report/templates/template-report-charts';
 import AppWidgetLoading from '@/modules/widget/components/v2/shared/widget-loading.vue';
@@ -106,29 +105,72 @@ const drawerExpanded = ref();
 const drawerDate = ref();
 const drawerTitle = ref();
 
-const widgetChartOptions = chartOptions('area', {
-  ySuggestedMax: 200,
-  yMaxTicksLimit: 11,
+const yType = ref('linear');
+const yMaxTicksLimit = ref(11);
+const ySuggestedMax = ref(200);
+const highestNumber = ref(0);
+const shouldUseLogarithmicScale = computed(() => highestNumber.value >= 800);
+
+const widgetChartOptions = computed(() => chartOptions('area', {
+  ySuggestedMax: ySuggestedMax.value,
+  yMaxTicksLimit: yMaxTicksLimit.value,
+  yType: yType.value,
+  yMin: 0,
   yStepSize: 50,
   yAfterBuildTicks: (axis) => {
-    const hasMinTick = axis.ticks.some((t) => t.value === 50);
-    const hasMaxTick = axis.ticks.some((t) => t.value === 100);
+    // Default ticks that need to be rendered regardless of axis type
+    const ticks = [
+      { label: '0', value: 0 },
+      { label: '50', value: 50 },
+      { label: '100', value: 100 },
+    ];
 
-    const { ticks } = axis;
+    const defaultLinearTick = { label: '150', value: 150 };
+    const defaultLogarithmicTicks = { label: '10', value: 10 };
 
-    if (!hasMinTick) {
-      ticks.push({
-        label: '50',
-        value: 50,
-      });
+    // Depending on the scale, push new ticks
+    // For scale, we will be adding hundreths until the maximum value
+    // For logarithmic, we will be calculating base 10 powers
+    // until the maximum order of magniture was reached
+    if (!shouldUseLogarithmicScale.value) {
+      ticks.push(defaultLinearTick);
+      yType.value = 'linear';
+
+      const magnitude = Math.ceil(highestNumber.value / 100);
+
+      for (let i = 2; i <= magnitude; i += 1) {
+        const newTickValue = 100 * i;
+
+        ticks.push({
+          label: `${newTickValue}`,
+          value: newTickValue,
+        });
+      }
+    } else {
+      ticks.splice(1, 0, defaultLogarithmicTicks);
+      yType.value = 'customLogarithmic';
+
+      const magnitude = Math.floor(Math.log10(highestNumber.value));
+
+      for (let i = 0; i <= magnitude + 1; i += 1) {
+        const newTickValue = 10 ** i;
+
+        if ((newTickValue) >= 1000) {
+          ticks.push({
+            label: `${newTickValue / 2}`,
+            value: newTickValue / 2,
+          });
+
+          ticks.push({
+            label: `${newTickValue}`,
+            value: newTickValue,
+          });
+        }
+      }
     }
 
-    if (!hasMaxTick) {
-      ticks.push({
-        label: '100',
-        value: 100,
-      });
-    }
+    yMaxTicksLimit.value = ticks.length;
+    ySuggestedMax.value = ticks[ticks.length - 1].value;
 
     Object.assign(axis, {
       ticks,
@@ -140,7 +182,7 @@ const widgetChartOptions = chartOptions('area', {
   annotationPlugin: {
     annotations: {
       idealRange: {
-        backgroundColor: 'rgb(250, 237, 234)',
+        backgroundColor: 'rgb(253, 246, 245)',
         yMin: 50,
         yMax: 100,
         borderColor: 'transparent',
@@ -149,7 +191,7 @@ const widgetChartOptions = chartOptions('area', {
       },
     },
   },
-});
+}));
 
 const { cubejsApi } = mapGetters('widget');
 const { doExport } = mapActions('member');
@@ -167,7 +209,7 @@ const datasets = computed(() => [
     showLegend: false,
   },
   {
-    name: 'Product-Community fit',
+    name: 'Product-Community Fit',
     backgroundColor: 'rgb(250, 237, 234)',
     borderColor: 'transparent',
     pointStyle: 'rect',
@@ -183,14 +225,7 @@ const query = computed(() => TOTAL_MONTHLY_ACTIVE_CONTRIBUTORS({
 
 const onUpdatePeriod = (updatedPeriod) => {
   period.value = updatedPeriod;
-
-  if (
-    updatedPeriod.label === ALL_TIME_PERIOD_FILTER.label
-  ) {
-    granularity.value = YEARLY_GRANULARITY_FILTER;
-  } else {
-    granularity.value = MONTHLY_GRANULARITY_FILTER;
-  }
+  granularity.value = MONTHLY_GRANULARITY_FILTER;
 };
 
 // Fetch function to pass to detail drawer
@@ -247,6 +282,10 @@ const onExport = async ({ ids, count }) => {
   } catch (error) {
     console.error(error);
   }
+};
+
+const onHighestNumberCalculation = (val) => {
+  highestNumber.value = val;
 };
 </script>
 

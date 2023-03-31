@@ -17,10 +17,10 @@
           </div>
           <div class="text-xs text-gray-600">
             Monthly active contributors help to measure
-            “product community-fit” for open-source
+            “Product-Community Fit” for open-source
             companies. This report looks beyond the usual
             metrics (stars, forks, etc.) and analyzes how
-            many people contributed in your community.
+            many people contributed to your community.
           </div>
         </div>
         <el-button
@@ -47,27 +47,25 @@
     title="Contribution types"
   >
     <template #description>
-      <div class="text-xs text-gray-600 mt-1">
+      <div class="text-xs text-gray-600 mt-2.5">
         Activity types that are considered as contributions
       </div>
     </template>
     <template #content>
       <div class="px-6 pb-6">
-        <div class="border-t border-gray-200">
+        <div class="">
           <div
             v-for="integration in integrations"
             :key="integration.platform"
-            class="border-b last:border-none"
           >
-            <div
-              v-for="activityType in contributions[integration.platform]"
+            <app-activity-type-list-item
+              v-for="(activityType, _key, index) in contributions[integration.platform]"
               :key="activityType.display.short"
-            >
-              <app-activity-type-list-item
-                :platform="integration.platform"
-                :label="activityType.display.short"
-              />
-            </div>
+              :platform="index === 0 && integration.platform"
+              :label="toSentenceCase(activityType.display.short)"
+              module="reports"
+              :is-last-activity="index === Object.keys(contributions[integration.platform]).length - 1"
+            />
           </div>
         </div>
       </div>
@@ -88,6 +86,7 @@ import {
   mapGetters,
   mapActions,
 } from '@/shared/vuex/vuex.helpers';
+import { toSentenceCase } from '@/utils/string';
 
 defineProps({
   filters: {

@@ -12,8 +12,10 @@
             :class="{ 'mb-8': !loading && !error }"
           >
             <div class="flex gap-1">
-              <!-- TODO: Add description when available -->
-              <app-widget-title title="Benchmark" />
+              <app-widget-title
+                title="Benchmark"
+                description="Compare your community with the contribution history of over 150,000 open-source repositories"
+              />
             </div>
 
             <app-widget-period
@@ -54,24 +56,24 @@
             />
           </div>
         </div>
+        <app-widget-insight v-if="!loading">
+          <template #description>
+            <span>Considering the contribution history of over
+              150,000 open-source repositories, we come to the
+              conclusion that you {{ average < 20 ? 'didn\'t achieve Early signals of Product-Community Fit' : 'had' }}
+              <span v-if="average >= 20" class="font-medium">{{ getInsightContent }}</span>{{
+                period.label === 'All time'
+                  ? ' since the beginning of your community.'
+                  : ` during the past ${pluralize(
+                    period.granularity,
+                    period.value,
+                    true,
+                  )}.`
+              }}</span>
+          </template>
+        </app-widget-insight>
       </template>
     </query-renderer>
-    <app-widget-insight>
-      <template #description>
-        <span>Considering the contribution history of over
-          150,000 open-source repositories, we come to the
-          conclusion that you had
-          <span class="font-medium">Great Product-Community fit</span>{{
-            period.label === 'All time'
-              ? ' since the beginning of your community.'
-              : ` during the past ${pluralize(
-                period.granularity,
-                period.value,
-                true,
-              )}.`
-          }}</span>
-      </template>
-    </app-widget-insight>
   </div>
 </template>
 
@@ -90,15 +92,41 @@ import {
   MONTHLY_GRANULARITY_FILTER,
   SIX_MONTHS_PERIOD_FILTER,
   MONTHLY_WIDGET_PERIOD_OPTIONS,
-  ALL_TIME_PERIOD_FILTER,
-  YEARLY_GRANULARITY_FILTER,
 } from '@/modules/widget/widget-constants';
 import { mapGetters } from '@/shared/vuex/vuex.helpers';
 import { TOTAL_MONTHLY_ACTIVE_CONTRIBUTORS } from '@/modules/widget/widget-queries';
 import { chartOptions } from '@/modules/report/templates/template-report-charts';
 import { PRODUCT_COMMUNITY_FIT_REPORT } from '@/modules/report/templates/template-reports';
 
-const benchmarkChartOptions = chartOptions('bar', {
+const props = defineProps({
+  filters: {
+    type: Object,
+    default: null,
+  },
+  isPublicView: {
+    type: Boolean,
+    default: false,
+  },
+});
+
+const period = ref(SIX_MONTHS_PERIOD_FILTER);
+const granularity = ref(MONTHLY_GRANULARITY_FILTER);
+const average = ref(0);
+
+const getInsightContent = computed(() => {
+  if (average.value >= 20 && average.value <= 50) {
+    return 'Early signals of Product-Community Fit';
+  } if (average.value > 50 && average.value <= 100) {
+    return 'Strong emerging signals of Product-Community Fit';
+  } if (average.value > 100 && average.value <= 200) {
+    return 'Great Product-Community Fit';
+  }
+
+  return 'Scale beyond Product-Community Fit';
+});
+
+const benchmarkChartOptions = computed(() => chartOptions('bar', {
+  clip: true,
   xTicks: false,
   xLines: false,
   xType: 'category',
@@ -143,24 +171,38 @@ const benchmarkChartOptions = chartOptions('bar', {
       });
     },
     afterTickToLabelConversion: (axis) => {
+      const match = {
+        color: '#111827',
+        fontWeight: 500,
+      };
+      const unmatch = {
+        color: '#9CA3AF',
+        fontWeight: 400,
+      };
+
+      const getMatch = (min, max) => (average.value >= min && (!max || average.value <= max) ? match : unmatch);
+
       const labels = [
         { text: '' },
         {
-          text: 'Early signals of Product-Community fit (20-50)',
-          color: '#9CA3AF',
+          text: 'Early signals of Product-Community Fit (20-50)',
+          color: getMatch(20, 50).color,
+          fontWeight: getMatch(20, 50).fontWeight,
         },
         {
-          text: 'Strong emerging signals of Product-Community fit (51-100)',
-          color: '#9CA3AF',
+          text: 'Strong emerging signals of Product-Community Fit (51-100)',
+          color: getMatch(51, 100).color,
+          fontWeight: getMatch(51, 100).fontWeight,
         },
         {
-          text: 'Great Product-Community fit (101-200)',
-          color: '#111827',
-          fontWeight: 500,
+          text: 'Great Product-Community Fit (101-200)',
+          color: getMatch(101, 200).color,
+          fontWeight: getMatch(101, 200).fontWeight,
         },
         {
-          text: 'Scale beyond Product-Community fit (200+)',
-          color: '#9CA3AF',
+          text: 'Scale beyond Product-Community Fit (200+)',
+          color: getMatch(201).color,
+          fontWeight: getMatch(201).fontWeight,
         },
       ];
 
@@ -173,7 +215,7 @@ const benchmarkChartOptions = chartOptions('bar', {
     },
     afterFit: (scaleInstance) => {
       Object.assign(scaleInstance, {
-        width: 410,
+        width: 400,
         maxWidth: 410,
       });
     },
@@ -192,32 +234,48 @@ const benchmarkChartOptions = chartOptions('bar', {
   },
   annotationPlugin: {
     annotations: {
-      idealRange: {
-        backgroundColor: 'rgb(250, 237, 234)',
-        yMin: 100,
-        yMax: 200,
-        borderColor: 'transparent',
-        type: 'box',
-        drawTime: 'beforeDraw',
+      idealRange: () => {
+        const getIdealRange = () => {
+          if (average.value < 20) {
+            return {
+              min: 0,
+              max: 20,
+            };
+          } if (average.value >= 20 && average.value <= 50) {
+            return {
+              min: 20,
+              max: 50,
+            };
+          } if (average.value > 50 && average.value <= 100) {
+            return {
+              min: 51,
+              max: 100,
+            };
+          } if (average.value > 100 && average.value <= 200) {
+            return {
+              min: 101,
+              max: 200,
+            };
+          }
+
+          return {
+            min: 200,
+            max: 250,
+          };
+        };
+
+        return {
+          backgroundColor: 'rgb(250, 237, 234)',
+          yMin: getIdealRange().min,
+          yMax: getIdealRange().max,
+          borderColor: 'transparent',
+          type: 'box',
+          drawTime: 'beforeDraw',
+        };
       },
     },
   },
-});
-
-const props = defineProps({
-  filters: {
-    type: Object,
-    default: null,
-  },
-  isPublicView: {
-    type: Boolean,
-    default: false,
-  },
-});
-
-const period = ref(SIX_MONTHS_PERIOD_FILTER);
-const granularity = ref(MONTHLY_GRANULARITY_FILTER);
-const average = ref(0);
+}));
 
 const { cubejsApi } = mapGetters('widget');
 
@@ -243,14 +301,7 @@ const query = computed(() => TOTAL_MONTHLY_ACTIVE_CONTRIBUTORS({
 
 const onUpdatePeriod = (updatedPeriod) => {
   period.value = updatedPeriod;
-
-  if (
-    updatedPeriod.label === ALL_TIME_PERIOD_FILTER.label
-  ) {
-    granularity.value = YEARLY_GRANULARITY_FILTER;
-  } else {
-    granularity.value = MONTHLY_GRANULARITY_FILTER;
-  }
+  granularity.value = MONTHLY_GRANULARITY_FILTER;
 };
 
 const onAverageCalculation = (calculatedAverage) => {

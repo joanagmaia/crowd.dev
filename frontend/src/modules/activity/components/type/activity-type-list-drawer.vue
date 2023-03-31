@@ -25,7 +25,7 @@
               <div
                 v-for="(
                   activityTypes, platform
-                ) in types.custom"
+                ) in types?.custom"
                 :key="platform"
               >
                 <app-activity-type-list-item

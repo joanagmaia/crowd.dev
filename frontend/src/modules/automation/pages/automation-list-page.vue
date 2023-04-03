@@ -75,7 +75,7 @@ import { FeatureFlag } from '@/featureFlag';
 import AppAutomationListTable from '@/modules/automation/components/list/automation-list-table.vue';
 import AppWebhookForm from '@/modules/automation/components/webhooks/webhook-form.vue';
 import AppWebhookExecutionList from '@/modules/automation/components/webhooks/webhook-execution-list.vue';
-import { getWorkflowMax, showWorkflowLimitDialog } from '../automation-export';
+import { getWorkflowMax, showWorkflowLimitDialog } from '../automation-limit';
 
 export default {
   name: 'AppAutomationListPage',

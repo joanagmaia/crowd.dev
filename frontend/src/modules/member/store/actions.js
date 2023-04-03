@@ -6,7 +6,6 @@ import Message from '@/shared/message/message';
 import { i18n } from '@/i18n';
 import { FormSchema } from '@/shared/form/form-schema';
 import sharedActions from '@/shared/store/actions';
-import ConfirmDialog from '@/shared/dialog/confirm-dialog';
 import {
   getEnrichmentMax,
   checkEnrichmentLimit,
@@ -14,7 +13,7 @@ import {
   showEnrichmentLoadingMessage,
   checkEnrichmentPlan,
 } from '@/modules/member/member-enrichment';
-import { getExportMax, showExportLimitDialog, showExportDialog } from '@/modules/member/member-export';
+import { getExportMax, showExportLimitDialog, showExportDialog } from '@/modules/member/member-export-limit';
 import { MemberModel } from '../member-model';
 
 export default {

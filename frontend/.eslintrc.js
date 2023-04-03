@@ -51,7 +51,7 @@ module.exports = {
     ],
     'import/extensions': [
       'error',
-      'ignorePackages',
+      'never',
       {
         js: 'never',
         jsx: 'never',
@@ -59,6 +59,7 @@ module.exports = {
         tsx: 'never',
       },
     ],
+    'import/no-unresolved': 'off',
   },
   settings: {
     'import/resolver': {

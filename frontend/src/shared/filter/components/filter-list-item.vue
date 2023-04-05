@@ -101,7 +101,6 @@ import {
 import isEqual from 'lodash/isEqual';
 import { formatDate } from '@/utils/date';
 import filterOperators from '../helpers/operators';
-import { attributesAreDifferent } from '../helpers/different-util';
 
 const props = defineProps({
   filter: {
@@ -173,6 +172,7 @@ const shouldShowReset = computed(() => !isEqual(
 ));
 
 const model = reactive({
+  ...props.filter,
   value: JSON.parse(
     JSON.stringify(
       props.filter.value
@@ -299,17 +299,6 @@ watch(
     }, 500);
   },
   { immediate: true },
-);
-
-watch(
-  () => props.filter,
-  (newValue) => {
-    if (attributesAreDifferent(model, newValue)) {
-      model.value = newValue.value;
-      model.operator = newValue.operator;
-    }
-  },
-  { deep: true },
 );
 </script>
 

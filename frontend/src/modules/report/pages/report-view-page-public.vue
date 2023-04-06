@@ -186,7 +186,6 @@ const initialPlatformValue = {
   ...platformField,
   custom: true,
   expanded: false,
-  custom: true,
 };
 
 export default {

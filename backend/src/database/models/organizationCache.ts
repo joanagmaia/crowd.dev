@@ -83,6 +83,49 @@ export default (sequelize) => {
         type: DataTypes.TEXT,
         allowNull: true,
       },
+      founded: {
+        type: DataTypes.NUMBER,
+        allowNull: true,
+      },
+      size: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+        default: ''
+      },
+      industry: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+        default: ''
+      },
+      naics: {
+        type: DataTypes.ARRAY(DataTypes.JSONB),
+        allowNull: true,
+        default: []
+      },
+      profiles: {
+        type: DataTypes.ARRAY(DataTypes.TEXT),
+        allowNull: true,
+        default: []
+      },
+      headline: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+        default: ''
+      },
+      ticker: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+        default: ''
+      },
+      type: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+      },
+      employeeCountByCountry: {
+        type: DataTypes.JSONB,
+        allowNull: true,
+        default: {}
+      },
     },
     {
       indexes: [

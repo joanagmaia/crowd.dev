@@ -1,0 +1,9 @@
+ALTER TABLE public."organizationCaches" DROP COLUMN;
+ALTER TABLE public."organizationCaches" DROP COLUMN;
+ALTER TABLE public."organizationCaches" DROP COLUMN;
+ALTER TABLE public."organizationCaches" DROP COLUMN;
+ALTER TABLE public."organizationCaches" DROP COLUMN;
+ALTER TABLE public."organizationCaches" DROP COLUMN;
+ALTER TABLE public."organizationCaches" DROP COLUMN;
+ALTER TABLE public."organizationCaches" DROP COLUMN;
+ALTER TABLE public."organizationCaches" DROP COLUMN;

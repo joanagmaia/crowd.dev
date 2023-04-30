@@ -84,13 +84,8 @@ export default (sequelize) => {
         allowNull: true,
       },
       founded: {
-        type: DataTypes.NUMBER,
+        type: DataTypes.INTEGER,
         allowNull: true,
-      },
-      size: {
-        type: DataTypes.TEXT,
-        allowNull: true,
-        default: ''
       },
       industry: {
         type: DataTypes.TEXT,
@@ -115,7 +110,6 @@ export default (sequelize) => {
       ticker: {
         type: DataTypes.TEXT,
         allowNull: true,
-        default: ''
       },
       type: {
         type: DataTypes.TEXT,
@@ -125,6 +119,10 @@ export default (sequelize) => {
         type: DataTypes.JSONB,
         allowNull: true,
         default: {}
+      },
+      lastEnrichedAt: {
+        type: DataTypes.DATE,
+        allowNull: false,
       },
     },
     {

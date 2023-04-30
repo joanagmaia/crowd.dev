@@ -88,6 +88,20 @@ class OrganizationCacheRepository {
     return this.findById(record.id, options)
   }
 
+  static async bulkUpdate(data: any[], fields: string[], options: IRepositoryOptions): Promise<void> {
+    if ((new Set(data.filter(org => org.id)
+          .map(org => org.id))
+        )
+        .size === data.length
+      ) {
+      await options.database.organizationCache.bulkCreate(data, {
+        ignoreDuplicates: true,
+        fields: [],
+        updateOnDuplicate: fields
+      })
+    }
+  }
+
   static async destroy(id, options: IRepositoryOptions, force = false) {
     const transaction = SequelizeRepository.getTransaction(options)
 

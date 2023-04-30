@@ -1,0 +1,9 @@
+ALTER TABLE public."organizations" DROP COLUMN;
+ALTER TABLE public."organizations" DROP COLUMN;
+ALTER TABLE public."organizations" DROP COLUMN;
+ALTER TABLE public."organizations" DROP COLUMN;
+ALTER TABLE public."organizations" DROP COLUMN;
+ALTER TABLE public."organizations" DROP COLUMN;
+ALTER TABLE public."organizations" DROP COLUMN;
+ALTER TABLE public."organizations" DROP COLUMN;
+ALTER TABLE public."organizations" DROP COLUMN;

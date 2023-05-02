@@ -29,6 +29,7 @@ import {
   SlackAlertingConfiguration,
   SampleDataConfiguration,
   IntegrationProcessingConfiguration,
+  OrganizationEnrichmentConfiguration,
 } from './configTypes'
 
 // TODO-kube
@@ -221,6 +222,12 @@ export const ENRICHMENT_CONFIG: EnrichmentConfiguration = KUBE_MODE
   ? config.get<EnrichmentConfiguration>('enrichment')
   : {
       url: process.env.ENRICHMENT_URL,
+      apiKey: process.env.ENRICHMENT_SECRET_KEY,
+    }
+
+export const ORGANIZATION_ENRICHMENT_CONFIG: OrganizationEnrichmentConfiguration = KUBE_MODE
+  ? config.get<OrganizationEnrichmentConfiguration>('Organizationenrichment')
+  : {
       apiKey: process.env.ENRICHMENT_SECRET_KEY,
     }
 

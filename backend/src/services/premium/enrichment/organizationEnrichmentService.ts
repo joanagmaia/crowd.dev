@@ -1,11 +1,12 @@
 import PDLJS from 'peopledatalabs'
 import lodash from 'lodash'
-import { QueryTypes } from 'sequelize'
 import { LoggingBase } from "../../loggingBase"
 import { 
   EnrichmentParams, 
+  IEnrichableOrganization, 
   IEnrichmentResponse, 
-  IOrganization 
+  IOrganization, 
+  IOrganizations
 } from "./types/organizationEnrichmentTypes"
 import { IServiceOptions } from "../../IServiceOptions"
 import { renameKeys } from '../../../utils/renameKeys'
@@ -73,36 +74,33 @@ export default class OrganizationEnrichmentService extends LoggingBase {
   /*
   Update all enrichable organizations with enriched data
   */
-  public async enrichOrganizationsAndSignalDone(): Promise<void> {
-    const enrichedOrganizations: IOrganization[] = []
-    const enrichedCachedOrganizations: IOrganization[] = []
-    for (const instance of (await this.queryEnrichableOrganizations())) {
+  public async enrichOrganizationsAndSignalDone(enrichableOrganizations: IEnrichableOrganization[]): Promise<IOrganizations> {
+    const organizations: IOrganizations = []
+    const cachedOrganizations: IOrganizations = []
+    for (const instance of enrichableOrganizations) {
       const data = await this.getEnrichment(instance)
-      const enrichedOrganization = OrganizationEnrichmentService.convertEnrichedDataToOrg(data)
-      enrichedOrganizations.push({...enrichedOrganization, id:instance.id})
-      enrichedCachedOrganizations.push({...enrichedOrganization, id:instance.cachId})
+      const orgs = OrganizationEnrichmentService.convertEnrichedDataToOrg(data)
+      organizations.push({...orgs, id:instance.id})
+      cachedOrganizations.push({...orgs, id:instance.cachId})
     }
-    const hasUpdated = await this.saveOrganizationInstances({
-      org: enrichedOrganizations,
-      cachedOrg: enrichedCachedOrganizations
+    const enrichedOrganizations = await this.saveOrganizationInstances({
+      org: organizations,
+      cachedOrg: cachedOrganizations
     })
-    await this.sendDoneSignal(hasUpdated)
+    await this.sendDoneSignal(enrichedOrganizations)
+    return enrichedOrganizations
   }
 
   private async saveOrganizationInstances({
     org,
     cachedOrg
   }: {
-    org: IOrganization[],
-    cachedOrg: IOrganization[]
-  }): Promise<boolean> {
-    try {
-      await OrganizationRepository.bulkUpdate(org, this.fields, this.options)
-      await OrganizationCacheRepository.bulkUpdate(cachedOrg, this.fields, this.options)
-    } catch(error) {
-      return false
-    }
-    return true
+    org: IOrganizations,
+    cachedOrg: IOrganizations
+  }): Promise<IOrganizations> {
+    const orgs = await OrganizationRepository.bulkUpdate(org, this.fields, this.options)
+    await OrganizationCacheRepository.bulkUpdate(cachedOrg, this.fields, this.options)
+    return orgs
       
   }
 
@@ -121,57 +119,13 @@ export default class OrganizationEnrichmentService extends LoggingBase {
     )
   }
 
-  private async queryEnrichableOrganizations(): Promise<({cachId: string} & IOrganization)[]> {
-    const query = `
-      with premiumOrgs as (
-        SELECT org."id"
-          ,org."name"
-          ,org."location"
-          ,org."website"
-          ,org."tenantId"
-          ,org."createdAt"
-        FROM "organizations" org
-        JOIN "tenants" tenant ON tenant."id"=org."tenantId"
-        WHERE tenant."plan" IN ('Growth', 'Eagle Eye') 
-          OR (tenant."isTrialPlan" is true AND tenant."plan" = 'Growth')
-      ),
-      orgActivities as (
-        SELECT memOrgs."organizationId", SUM(actAgg."activityCount") "orgActivityCount"
-        FROM "memberActivityAggregatesMVs" actAgg
-        INNER JOIN "memberOrganizations" memOrgs ON actAgg."id"=memOrgs."memberId"
-        GROUP BY memOrgs."organizationId"
-      ) 
-      SELECT 
-        ,orgs.id id
-        ,cach.id cachId
-        ,orgs."name"
-        ,orgs."location"
-        ,orgs."website"
-        orgs."tenantId"
-      FROM premiumOrgs orgs
-      JOIN "organizationCaches" cach ON orgs."name" = cach."name"
-      JOIN orgActivities activity ON activity."organizationId" = orgs."id"
-      ORDER BY activity."orgActivityCount" DESC, orgs."createdAt" DESC
-      LIMIT :limit
-      ;
-    `
-    const [orgs] = await this.options.database.query(
-      query,
-      {
-        replacements: {limit: 100},
-        type: QueryTypes.SELECT,
-      }
-    )
-    return orgs
-  }
-
-  private async sendDoneSignal(hasUpdated: boolean){
+  private async sendDoneSignal(organizations: IOrganizations){
     const redis = await createRedisClient(true)
 
     const apiPubSubEmitter = new RedisPubSubEmitter('api-pubsub', redis, (err) => {
       this.log.error({ err }, 'Error in api-ws emitter!')
     })
-    if (hasUpdated) {
+    if (!organizations.length) {
       apiPubSubEmitter.emit(
         'user',
         new ApiWebsocketMessage(
@@ -194,6 +148,7 @@ export default class OrganizationEnrichmentService extends LoggingBase {
           JSON.stringify({
             tenantId: this.options.currentTenant.id,
             success: true,
+            organizations: organizations.map(org => org.id),
           }),
           undefined,
           this.options.currentTenant.id,

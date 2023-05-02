@@ -11,6 +11,7 @@ import mergeSuggestions from './mergeSuggestions'
 import refreshSampleData from './refreshSampleData'
 import cleanUpIntegrationRuns from './cleanUpIntegrationRuns'
 import checkStuckIntegrationRuns from './checkStuckIntegrationRuns'
+import enrichOrganizations from './organizationEnricher'
 
 const jobs: CrowdJob[] = [
   weeklyAnalyticsEmailsCoordinator,
@@ -25,6 +26,7 @@ const jobs: CrowdJob[] = [
   refreshSampleData,
   cleanUpIntegrationRuns,
   checkStuckIntegrationRuns,
+  enrichOrganizations,
 ]
 
 export default jobs

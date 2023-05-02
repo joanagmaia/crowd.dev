@@ -1,3 +1,4 @@
+import { IEnrichableOrganization } from '../../../services/premium/enrichment/types/organizationEnrichmentTypes'
 import { AutomationTrigger, AutomationType } from '../../../types/automationTypes'
 
 export type BaseNodeMicroserviceMessage = {
@@ -71,4 +72,10 @@ export type BulkEnrichMessage = {
   service: string
   tenant: string
   memberIds: string[]
+}
+
+export type OrganizationBulkEnrichMessage = {
+  service: string
+  tenant: string
+  organizations: IEnrichableOrganization[]
 }

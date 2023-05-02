@@ -1,5 +1,6 @@
 import PDLJS from 'peopledatalabs'
 import lodash from 'lodash'
+import { QueryTypes } from 'sequelize'
 import { LoggingBase } from "../../loggingBase"
 import { 
   EnrichmentParams, 
@@ -17,8 +18,11 @@ import { createRedisClient } from '../../../utils/redis'
 import RedisPubSubEmitter from '../../../utils/redis/pubSubEmitter'
 
 export default class OrganizationEnrichmentService extends LoggingBase {
+  tenantId: string
   
   private readonly apiKey: string
+
+  private readonly maxOrganizationsLimit: number
 
   private readonly fields = [
     "name",
@@ -42,14 +46,21 @@ export default class OrganizationEnrichmentService extends LoggingBase {
 
   constructor({
     options, 
-    apiKey
+    apiKey,
+    limit,
+    tenantId,
+    
   }: {
     options: OrganizationEnrichmentService['options'], 
-    apiKey: string
+    apiKey: string,
+    tenantId: string,
+    limit: number
   }
     ) {
     super(options)
     this.apiKey = apiKey
+    this.maxOrganizationsLimit = limit
+    this.tenantId = tenantId
   }
   
   /**
@@ -74,10 +85,10 @@ export default class OrganizationEnrichmentService extends LoggingBase {
   /*
   Update all enrichable organizations with enriched data
   */
-  public async enrichOrganizationsAndSignalDone(enrichableOrganizations: IEnrichableOrganization[]): Promise<IOrganizations> {
+  public async enrichOrganizationsAndSignalDone(): Promise<IOrganizations> {
     const organizations: IOrganizations = []
     const cachedOrganizations: IOrganizations = []
-    for (const instance of enrichableOrganizations) {
+    for (const instance of await this.querytenancyOrganizations()) {
       const data = await this.getEnrichment(instance)
       const orgs = OrganizationEnrichmentService.convertEnrichedDataToOrg(data)
       organizations.push({...orgs, id:instance.id})
@@ -155,5 +166,38 @@ export default class OrganizationEnrichmentService extends LoggingBase {
         ),
       )
     }
+  }
+
+  async querytenancyOrganizations(): Promise<IEnrichableOrganization[]> {
+    const query = `
+      with orgActivities as (
+        SELECT memOrgs."organizationId", SUM(actAgg."activityCount") "orgActivityCount"
+        FROM "memberActivityAggregatesMVs" actAgg
+        INNER JOIN "memberOrganizations" memOrgs ON actAgg."id"=memOrgs."memberId"
+        GROUP BY memOrgs."organizationId"
+      ) 
+      SELECT org.id id
+      ,cach.id cachId
+      ,org."name"
+      ,org."location"
+      ,org."website"
+      FROM "organizations" as org
+      JOIN "organizationCaches" cach ON org."name" = cach."name"
+      JOIN orgActivities activity ON activity."organizationId" = org."id"
+      WHERE :tenantId = org."tenantId"
+      ORDER BY activity."orgActivityCount" DESC, org."createdAt" DESC
+      LIMIT :limit
+    ;
+    `
+    return this.options.database.query(
+      query,
+      {
+        type: QueryTypes.SELECT,
+        replacements: {
+          tenantId: this.tenantId,
+          limit: this.maxOrganizationsLimit,
+        }
+      }
+    )
   }
 }

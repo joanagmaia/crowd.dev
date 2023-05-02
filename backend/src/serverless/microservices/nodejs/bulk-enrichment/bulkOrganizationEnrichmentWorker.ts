@@ -2,13 +2,12 @@ import { ORGANIZATION_ENRICHMENT_CONFIG } from "../../../../config"
 import getUserContext from "../../../../database/utils/getUserContext"
 import { PLAN_LIMITS } from "../../../../feature-flags/isFeatureEnabled"
 import OrganizationEnrichmentService from "../../../../services/premium/enrichment/organizationEnrichmentService"
-import { IEnrichableOrganization } from "../../../../services/premium/enrichment/types/organizationEnrichmentTypes"
 import { FeatureFlag, FeatureFlagRedisKey } from "../../../../types/common"
 import { createRedisClient } from "../../../../utils/redis"
 import { RedisCache } from "../../../../utils/redis/redisCache"
 import { getSecondsTillEndOfMonth } from "../../../../utils/timing"
 
-async function BulkorganizationEnrichmentWorker(tenantId: string, org: IEnrichableOrganization[]) {
+async function BulkorganizationEnrichmentWorker(tenantId: string) {
   const userContext = await getUserContext(tenantId)
   const enrichmentLimit = PLAN_LIMITS[userContext.currentTenant.plan
   ][FeatureFlag.ORGANIZATION_ENRICHMENT]
@@ -29,11 +28,11 @@ async function BulkorganizationEnrichmentWorker(tenantId: string, org: IEnrichab
   )
   const enrichmentService = new OrganizationEnrichmentService({
     options: userContext,
-    apiKey: ORGANIZATION_ENRICHMENT_CONFIG.apiKey
+    apiKey: ORGANIZATION_ENRICHMENT_CONFIG.apiKey,
+    tenantId: userContext.currentTenant.id,
+    limit: unusedEnrichmentCount
   })
-  const successfulEnrichments = await enrichmentService.enrichOrganizationsAndSignalDone(
-    org.slice(0, unusedEnrichmentCount)
-  )
+  const successfulEnrichments = await enrichmentService.enrichOrganizationsAndSignalDone()
   unusedEnrichmentCount -= successfulEnrichments.length
   
   const secondsRemainingUntilEndOfMonth = getSecondsTillEndOfMonth()

@@ -59,8 +59,12 @@ class OrganizationRepository {
     return this.findById(record.id, options)
   }
 
-  static async bulkUpdate<T extends any[]>(data: T, fields: string[], options: IRepositoryOptions): Promise<T> {
-    const isValid = new Set(data.filter(org => org.id).map(org => org.id)).size !== data.length
+  static async bulkUpdate<T extends any[]>(
+    data: T,
+    fields: string[],
+    options: IRepositoryOptions,
+  ): Promise<T> {
+    const isValid = new Set(data.filter((org) => org.id).map((org) => org.id)).size !== data.length
     if (isValid) return [] as T
     const orgs = await options.database.organizationCache.bulkCreate(data, {
       ignoreDuplicates: true,

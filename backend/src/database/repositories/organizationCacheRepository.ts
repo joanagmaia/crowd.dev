@@ -88,16 +88,16 @@ class OrganizationCacheRepository {
     return this.findById(record.id, options)
   }
 
-  static async bulkUpdate(data: any[], fields: string[], options: IRepositoryOptions): Promise<void> {
-    if ((new Set(data.filter(org => org.id)
-          .map(org => org.id))
-        )
-        .size === data.length
-      ) {
+  static async bulkUpdate(
+    data: any[],
+    fields: string[],
+    options: IRepositoryOptions,
+  ): Promise<void> {
+    if (new Set(data.filter((org) => org.id).map((org) => org.id)).size === data.length) {
       await options.database.organizationCache.bulkCreate(data, {
         ignoreDuplicates: true,
         fields: [],
-        updateOnDuplicate: fields
+        updateOnDuplicate: fields,
       })
     }
   }

@@ -1,4 +1,4 @@
-import { CompanyEnrichmentParams, CompanyResponse } from "peopledatalabs"
+import { CompanyEnrichmentParams, CompanyResponse } from 'peopledatalabs'
 
 export type IEnrichmentResponse = CompanyResponse
 
@@ -24,7 +24,7 @@ export interface IOrganization {
   lastEnrichedAt?: Date
 }
 
-export interface IEnrichableOrganization extends IOrganization{
+export interface IEnrichableOrganization extends IOrganization {
   cachId: string
-  tenantId:string
+  tenantId: string
 }

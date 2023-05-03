@@ -7,7 +7,7 @@ import { createRedisClient } from '../../../../utils/redis'
 import { RedisCache } from '../../../../utils/redis/redisCache'
 import { getSecondsTillEndOfMonth } from '../../../../utils/timing'
 
-async function BulkorganizationEnrichmentWorker(tenantId: string) {
+export async function BulkorganizationEnrichmentWorker(tenantId: string) {
   const userContext = await getUserContext(tenantId)
   const enrichmentLimit =
     PLAN_LIMITS[userContext.currentTenant.plan][FeatureFlag.ORGANIZATION_ENRICHMENT]
@@ -32,8 +32,4 @@ async function BulkorganizationEnrichmentWorker(tenantId: string) {
     (successfulEnrichments.length).toString(),
     secondsRemainingUntilEndOfMonth,
   )
-
-
 }
-
-export { BulkorganizationEnrichmentWorker }

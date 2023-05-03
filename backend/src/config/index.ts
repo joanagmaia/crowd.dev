@@ -226,9 +226,9 @@ export const ENRICHMENT_CONFIG: EnrichmentConfiguration = KUBE_MODE
     }
 
 export const ORGANIZATION_ENRICHMENT_CONFIG: OrganizationEnrichmentConfiguration = KUBE_MODE
-  ? config.get<OrganizationEnrichmentConfiguration>('Organizationenrichment')
+  ? config.get<OrganizationEnrichmentConfiguration>('organizationEnrichment')
   : {
-      apiKey: process.env.ENRICHMENT_SECRET_KEY,
+      apiKey: process.env.ORGANIZATION_ENRICHMENT_SECRET_KEY,
     }
 
 export const EAGLE_EYE_CONFIG: EagleEyeConfiguration = KUBE_MODE

@@ -8,6 +8,7 @@ export type IOrganizations = IOrganization[]
 export interface IOrganization {
   id: string
   name: string
+  tenantId?: string
   website?: string
   location?: string
   description?: IEnrichmentResponse['summary']

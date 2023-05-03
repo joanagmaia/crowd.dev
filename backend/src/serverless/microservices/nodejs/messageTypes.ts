@@ -75,5 +75,5 @@ export type BulkEnrichMessage = {
 
 export type OrganizationBulkEnrichMessage = {
   service: string
-  tenant: string
+  tenantId: string
 }

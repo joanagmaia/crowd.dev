@@ -1,4 +1,5 @@
 import PDLJS from 'peopledatalabs'
+import moment from 'moment'
 import lodash from 'lodash'
 import { QueryTypes } from 'sequelize'
 import { LoggingBase } from '../../loggingBase'
@@ -16,6 +17,7 @@ import OrganizationCacheRepository from '../../../database/repositories/organiza
 import { ApiWebsocketMessage } from '../../../types/mq/apiWebsocketMessage'
 import { createRedisClient } from '../../../utils/redis'
 import RedisPubSubEmitter from '../../../utils/redis/pubSubEmitter'
+import SequelizeRepository from '../../../database/repositories/sequelizeRepository'
 
 export default class OrganizationEnrichmentService extends LoggingBase {
   tenantId: string
@@ -37,6 +39,7 @@ export default class OrganizationEnrichmentService extends LoggingBase {
     'naics',
     'industry',
     'founded',
+    'size',
     'employees',
     'twitter',
     'lastEnrichedAt',
@@ -56,6 +59,7 @@ export default class OrganizationEnrichmentService extends LoggingBase {
     limit: number
   }) {
     super(options)
+    this.options = options
     this.apiKey = apiKey
     this.maxOrganizationsLimit = limit
     this.tenantId = tenantId
@@ -66,64 +70,68 @@ export default class OrganizationEnrichmentService extends LoggingBase {
    * @param enrichmentInput - The object that contains organization enrichment attributes
    * @returns the PDL company response
    */
-  async getEnrichment({ name, website, locality }: EnrichmentParams): Promise<IEnrichmentResponse> {
+  async getEnrichment({ name, website, locality }: EnrichmentParams): Promise<any> {
     const PDLClient = new PDLJS({ apiKey: this.apiKey })
-
-    const data = await PDLClient.company.enrichment({ name, website, locality })
-    if (data.status !== 200) {
-      // TODO: Handle failed operation
-      return null
+    let data: null | IEnrichmentResponse
+    try {
+      const data = await PDLClient.company.enrichment({ name, website, locality })
+      data.name = name
+    } catch (error) {
+      this.options.log.warn({ name, website, locality }, error)
+      data = null
     }
-    data.name = name
     return data
   }
 
-  /*
-  Update all enrichable organizations with enriched data
-  */
-  public async enrichOrganizationsAndSignalDone(): Promise<IOrganizations> {
-    const organizations: IOrganizations = []
-    const cachedOrganizations: IOrganizations = []
-    for (const instance of await this.querytenancyOrganizations()) {
-      const data = await this.getEnrichment(instance)
-      const orgs = OrganizationEnrichmentService.convertEnrichedDataToOrg(data)
-      organizations.push({ ...orgs, id: instance.id })
-      cachedOrganizations.push({ ...orgs, id: instance.cachId })
-    }
-    const enrichedOrganizations = await this.saveOrganizationInstances({
-      org: organizations,
-      cachedOrg: cachedOrganizations,
-    })
-    await this.sendDoneSignal(enrichedOrganizations)
-    return enrichedOrganizations
+  static isRecentlyEnriched(org: IOrganization, lastEnriched=6): boolean {
+    return org.lastEnrichedAt && (moment(org.lastEnrichedAt).diff(moment(), 'months') < lastEnriched)
   }
 
-  private async saveOrganizationInstances({
-    org,
-    cachedOrg,
-  }: {
-    org: IOrganizations
-    cachedOrg: IOrganizations
-  }): Promise<IOrganizations> {
-    const orgs = await OrganizationRepository.bulkUpdate(org, this.fields, this.options)
-    await OrganizationCacheRepository.bulkUpdate(cachedOrg, this.fields, this.options)
+
+  public async enrichOrganizationsAndSignalDone(): Promise<IOrganizations> {
+    const enrichedOrganizations: IOrganizations = []
+    const enrichedCacheOrganizations: IOrganizations = []
+    for (const instance of await this.queryTenancyOrganizations()) {
+      if(OrganizationEnrichmentService.isRecentlyEnriched(instance)) {
+        // eslint-disable-next-line no-continue
+        continue
+      }
+      const data = await this.getEnrichment(instance)
+      if(data) {
+        const org = this.convertEnrichedDataToOrg(data)
+        enrichedOrganizations.push({...org, id: instance.id, tenantId: this.tenantId})
+        enrichedCacheOrganizations.push({ ...org, id: instance.cachId})
+      }
+    }
+    const orgs = await this.update(enrichedOrganizations, enrichedCacheOrganizations)
+    await this.sendDoneSignal(orgs)
     return orgs
   }
 
-  private static convertEnrichedDataToOrg(data: Awaited<IEnrichmentResponse>): IOrganization {
-    const org = <IOrganization>renameKeys(data, {
+  private async update(orgs: IOrganizations, cacheOrgs: IOrganizations): Promise<IOrganizations> {
+    // eslint-disable-next-line no-console
+    await OrganizationCacheRepository.bulkUpdate(cacheOrgs, this.options)
+    return OrganizationRepository.bulkUpdate(orgs, this.fields, this.options)
+  }
+
+  private convertEnrichedDataToOrg(data: Awaited<IEnrichmentResponse>): IOrganization {
+    data = renameKeys(data, {
       summary: 'description',
       employeeCountByCountry: 'employee_count_by_country',
-      size: 'employees',
       twitter_url: 'twitter',
     })
-    org.lastEnrichedAt = new Date()
+    const lastEnrichedAt = new Date()
+    const location = `
+      ${data.location.street_address} ${data.location.address_line_2} ${data.location.name}
+    `
+    const org: IOrganization = lodash.pick(data, this.fields)
 
-    return lodash.pick(org)
+    return Object.assign(org, {lastEnrichedAt, location})
   }
 
   private async sendDoneSignal(organizations: IOrganizations) {
     const redis = await createRedisClient(true)
+    const organizationIds = organizations.map((org) => org.id)
 
     const apiPubSubEmitter = new RedisPubSubEmitter('api-pubsub', redis, (err) => {
       this.log.error({ err }, 'Error in api-ws emitter!')
@@ -132,13 +140,14 @@ export default class OrganizationEnrichmentService extends LoggingBase {
       apiPubSubEmitter.emit(
         'user',
         new ApiWebsocketMessage(
-          'bulk-enrichment',
+          'organization-bulk-enrichment',
           JSON.stringify({
-            tenantId: this.options.currentTenant.id,
+            tenantId: this.tenantId,
             success: false,
+            organizationIds,
           }),
           undefined,
-          this.options.currentTenant.id,
+          this.tenantId,
         ),
       )
     }
@@ -147,20 +156,21 @@ export default class OrganizationEnrichmentService extends LoggingBase {
       apiPubSubEmitter.emit(
         'user',
         new ApiWebsocketMessage(
-          'bulk-enrichment',
+          'organization-bulk-enrichment',
           JSON.stringify({
-            tenantId: this.options.currentTenant.id,
+            tenantId: this.tenantId,
             success: true,
-            organizations: organizations.map((org) => org.id),
+            organizationIds,
           }),
           undefined,
-          this.options.currentTenant.id,
+          this.tenantId
         ),
       )
     }
   }
 
-  async querytenancyOrganizations(): Promise<IEnrichableOrganization[]> {
+  async queryTenancyOrganizations(): Promise<IEnrichableOrganization[]> {
+    const options = await SequelizeRepository.getDefaultIRepositoryOptions()
     const query = `
       with orgActivities as (
         SELECT memOrgs."organizationId", SUM(actAgg."activityCount") "orgActivityCount"
@@ -168,25 +178,27 @@ export default class OrganizationEnrichmentService extends LoggingBase {
         INNER JOIN "memberOrganizations" memOrgs ON actAgg."id"=memOrgs."memberId"
         GROUP BY memOrgs."organizationId"
       ) 
-      SELECT org.id id
-      ,cach.id cachId
+      SELECT org.id "id"
+      ,cach.id "cachId"
       ,org."name"
       ,org."location"
       ,org."website"
+      ,org."lastEnrichedAt"
       FROM "organizations" as org
       JOIN "organizationCaches" cach ON org."name" = cach."name"
       JOIN orgActivities activity ON activity."organizationId" = org."id"
       WHERE :tenantId = org."tenantId"
-      ORDER BY activity."orgActivityCount" DESC, org."createdAt" DESC
+      ORDER BY org."lastEnrichedAt" ASC, activity."orgActivityCount" DESC, org."createdAt" DESC
       LIMIT :limit
     ;
     `
-    return this.options.database.query(query, {
+    const orgs: IEnrichableOrganization[] = await SequelizeRepository.getSequelize(options).query(query, {
       type: QueryTypes.SELECT,
       replacements: {
         tenantId: this.tenantId,
         limit: this.maxOrganizationsLimit,
       },
     })
+    return orgs
   }
 }

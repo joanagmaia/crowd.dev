@@ -97,6 +97,11 @@ export default (sequelize) => {
         allowNull: true,
         default: '',
       },
+      size: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+        default: '',
+      },
       naics: {
         type: DataTypes.ARRAY(DataTypes.JSONB),
         allowNull: true,

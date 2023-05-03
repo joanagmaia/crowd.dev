@@ -71,7 +71,7 @@ async function workerFactory(event: NodeMicroserviceMessage): Promise<any> {
       return bulkEnrichmentWorker(bulkEnrichMessage.tenant, bulkEnrichMessage.memberIds)
     case 'enrich-organizations': {
       const bulkEnrichMessage = event as OrganizationBulkEnrichMessage
-      return BulkorganizationEnrichmentWorker(bulkEnrichMessage.tenant)
+      return BulkorganizationEnrichmentWorker(bulkEnrichMessage.tenantId)
     }
 
     case 'automation-process':

@@ -15,10 +15,13 @@ const job: CrowdJob = {
 async function sendWorkerMessage() {
   const options = await SequelizeRepository.getDefaultIRepositoryOptions()
 
-  for (const tenant of await queryEnrichableOrganizations(options.database)) {
-    await sendNodeWorkerMessage(tenant, {
+  for (const tenantId of await queryEnrichableOrganizations(
+    SequelizeRepository.getSequelize(options)
+  )) {
+    await sendNodeWorkerMessage(tenantId, {
       type: NodeWorkerMessageType.NODE_MICROSERVICE,
       service: 'enrich-organizations',
+      tenantId,
     } as NodeWorkerMessageBase)
   }
 }
@@ -30,9 +33,9 @@ async function queryEnrichableOrganizations(database: any): Promise<string[]> {
       OR (tenants."isTrialPlan" is true AND tenants."plan" = 'Growth')
     ;
     `
-  const tenantIds: string[] = await database.query(query, {
+  const tenantIds: string[] = (await database.query(query, {
     type: QueryTypes.SELECT,
-  })
+  })).map((tenant: { id: string }) => tenant.id)
   return tenantIds
 }
 

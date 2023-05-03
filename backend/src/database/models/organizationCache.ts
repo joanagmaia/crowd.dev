@@ -87,6 +87,11 @@ export default (sequelize) => {
         type: DataTypes.INTEGER,
         allowNull: true,
       },
+      size: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+        default: '',
+      },
       industry: {
         type: DataTypes.TEXT,
         allowNull: true,

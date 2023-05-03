@@ -29,6 +29,18 @@ class OrganizationCacheRepository {
           'website',
           'github',
           'location',
+          'employeeCountByCountry',
+          'type',
+          'ticker',
+          'headline',
+          'profiles',
+          'naics',
+          'industry',
+          'founded',
+          'size',
+          'employees',
+          'twitter',
+          'lastEnrichedAt',
         ]),
       },
       {
@@ -76,6 +88,18 @@ class OrganizationCacheRepository {
           'website',
           'github',
           'location',
+          'employeeCountByCountry',
+          'type',
+          'ticker',
+          'headline',
+          'profiles',
+          'naics',
+          'industry',
+          'founded',
+          'size',
+          'employees',
+          'twitter',
+          'lastEnrichedAt',
         ]),
       },
       {
@@ -90,15 +114,10 @@ class OrganizationCacheRepository {
 
   static async bulkUpdate(
     data: any[],
-    fields: string[],
     options: IRepositoryOptions,
   ): Promise<void> {
-    if (new Set(data.filter((org) => org.id).map((org) => org.id)).size === data.length) {
-      await options.database.organizationCache.bulkCreate(data, {
-        ignoreDuplicates: true,
-        fields: [],
-        updateOnDuplicate: fields,
-      })
+    for (const org of data) {
+      this.update(org.id, org, options)
     }
   }
 

@@ -122,7 +122,7 @@ export default (sequelize) => {
       },
       lastEnrichedAt: {
         type: DataTypes.DATE,
-        allowNull: false,
+        allowNull: true,
       },
     },
     {

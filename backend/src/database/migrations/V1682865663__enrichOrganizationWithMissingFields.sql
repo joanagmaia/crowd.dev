@@ -1,4 +1,4 @@
-ALTER TABLE public."organizations" ADD COLUMN "lastEnrichedAt" TIMESTAMP WITH TIME ZONE DEFAULT null;
+ALTER TABLE public."organizations" ADD COLUMN "lastEnrichedAt" TIMESTAMP WITH TIME ZONE NULL;
 ALTER TABLE public."organizations" ADD COLUMN "employeeCountByCountry" JSONB NOT NULL DEFAULT '{}'::JSONB;
 ALTER TABLE public."organizations" ADD COLUMN "type" TEXT NULL;
 ALTER TABLE public."organizations" ADD COLUMN "ticker" TEXT NULL;

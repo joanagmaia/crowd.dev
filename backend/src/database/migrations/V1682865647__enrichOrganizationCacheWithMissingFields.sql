@@ -1,4 +1,4 @@
-ALTER TABLE public."organizationCaches" ADD COLUMN "lastEnrichedAt" TIMESTAMP WITH TIME ZONE DEFAULT null;
+ALTER TABLE public."organizationCaches" ADD COLUMN "lastEnrichedAt" TIMESTAMP WITH TIME ZONE NULL;
 ALTER TABLE public."organizationCaches" ADD COLUMN "employeeCountByCountry" JSONB NOT NULL DEFAULT '{}'::JSONB;
 ALTER TABLE public."organizationCaches" ADD COLUMN "type" TEXT NULL;
 ALTER TABLE public."organizationCaches" ADD COLUMN "ticker" TEXT NULL;

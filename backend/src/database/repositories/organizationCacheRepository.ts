@@ -112,10 +112,7 @@ class OrganizationCacheRepository {
     return this.findById(record.id, options)
   }
 
-  static async bulkUpdate(
-    data: any[],
-    options: IRepositoryOptions,
-  ): Promise<void> {
+  static async bulkUpdate(data: any[], options: IRepositoryOptions): Promise<void> {
     for (const org of data) {
       this.update(org.id, org, options)
     }

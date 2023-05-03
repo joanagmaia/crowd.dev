@@ -16,7 +16,7 @@ async function sendWorkerMessage() {
   const options = await SequelizeRepository.getDefaultIRepositoryOptions()
 
   for (const tenantId of await queryEnrichableOrganizations(
-    SequelizeRepository.getSequelize(options)
+    SequelizeRepository.getSequelize(options),
   )) {
     await sendNodeWorkerMessage(tenantId, {
       type: NodeWorkerMessageType.NODE_MICROSERVICE,
@@ -33,9 +33,11 @@ async function queryEnrichableOrganizations(database: any): Promise<string[]> {
       OR (tenants."isTrialPlan" is true AND tenants."plan" = 'Growth')
     ;
     `
-  const tenantIds: string[] = (await database.query(query, {
-    type: QueryTypes.SELECT,
-  })).map((tenant: { id: string }) => tenant.id)
+  const tenantIds: string[] = (
+    await database.query(query, {
+      type: QueryTypes.SELECT,
+    })
+  ).map((tenant: { id: string }) => tenant.id)
   return tenantIds
 }
 

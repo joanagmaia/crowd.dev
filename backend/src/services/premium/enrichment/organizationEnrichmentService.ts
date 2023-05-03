@@ -83,24 +83,23 @@ export default class OrganizationEnrichmentService extends LoggingBase {
     return data
   }
 
-  static isRecentlyEnriched(org: IOrganization, lastEnriched=6): boolean {
-    return org.lastEnrichedAt && (moment(org.lastEnrichedAt).diff(moment(), 'months') < lastEnriched)
+  static isRecentlyEnriched(org: IOrganization, lastEnriched = 6): boolean {
+    return org.lastEnrichedAt && moment(org.lastEnrichedAt).diff(moment(), 'months') < lastEnriched
   }
-
 
   public async enrichOrganizationsAndSignalDone(): Promise<IOrganizations> {
     const enrichedOrganizations: IOrganizations = []
     const enrichedCacheOrganizations: IOrganizations = []
     for (const instance of await this.queryTenancyOrganizations()) {
-      if(OrganizationEnrichmentService.isRecentlyEnriched(instance)) {
+      if (OrganizationEnrichmentService.isRecentlyEnriched(instance)) {
         // eslint-disable-next-line no-continue
         continue
       }
       const data = await this.getEnrichment(instance)
-      if(data) {
+      if (data) {
         const org = this.convertEnrichedDataToOrg(data)
-        enrichedOrganizations.push({...org, id: instance.id, tenantId: this.tenantId})
-        enrichedCacheOrganizations.push({ ...org, id: instance.cachId})
+        enrichedOrganizations.push({ ...org, id: instance.id, tenantId: this.tenantId })
+        enrichedCacheOrganizations.push({ ...org, id: instance.cachId })
       }
     }
     const orgs = await this.update(enrichedOrganizations, enrichedCacheOrganizations)
@@ -126,7 +125,7 @@ export default class OrganizationEnrichmentService extends LoggingBase {
     `
     const org: IOrganization = lodash.pick(data, this.fields)
 
-    return Object.assign(org, {lastEnrichedAt, location})
+    return Object.assign(org, { lastEnrichedAt, location })
   }
 
   private async sendDoneSignal(organizations: IOrganizations) {
@@ -163,7 +162,7 @@ export default class OrganizationEnrichmentService extends LoggingBase {
             organizationIds,
           }),
           undefined,
-          this.tenantId
+          this.tenantId,
         ),
       )
     }
@@ -192,13 +191,16 @@ export default class OrganizationEnrichmentService extends LoggingBase {
       LIMIT :limit
     ;
     `
-    const orgs: IEnrichableOrganization[] = await SequelizeRepository.getSequelize(options).query(query, {
-      type: QueryTypes.SELECT,
-      replacements: {
-        tenantId: this.tenantId,
-        limit: this.maxOrganizationsLimit,
+    const orgs: IEnrichableOrganization[] = await SequelizeRepository.getSequelize(options).query(
+      query,
+      {
+        type: QueryTypes.SELECT,
+        replacements: {
+          tenantId: this.tenantId,
+          limit: this.maxOrganizationsLimit,
+        },
       },
-    })
+    )
     return orgs
   }
 }

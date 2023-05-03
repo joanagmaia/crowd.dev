@@ -17,5 +17,4 @@ export async function BulkorganizationEnrichmentWorker(tenantId: string) {
     limit: enrichmentLimit,
   })
   await enrichmentService.enrichOrganizationsAndSignalDone()
-
 }

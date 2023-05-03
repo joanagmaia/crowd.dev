@@ -66,14 +66,13 @@ class OrganizationRepository {
   ): Promise<T> {
     const isValid = new Set(data.filter((org) => org.id).map((org) => org.id)).size !== data.length
     if (isValid) return [] as T
-    
+
     const orgs = await options.database.organization.bulkCreate(data, {
       fields: ['id', 'tenantId', ...fields],
       updateOnDuplicate: fields,
       returning: fields,
     })
     return orgs
-    
   }
 
   static async update(id, data, options: IRepositoryOptions) {

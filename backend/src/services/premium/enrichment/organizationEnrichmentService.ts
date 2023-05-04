@@ -83,18 +83,14 @@ export default class OrganizationEnrichmentService extends LoggingBase {
     return data
   }
 
-  static isRecentlyEnriched(org: IOrganization, lastEnriched = 6): boolean {
-    return org.lastEnrichedAt && moment(org.lastEnrichedAt).diff(moment(), 'months') < lastEnriched
+  static shouldReenrich(org: IOrganization, lastEnriched = 6): boolean {
+    return org.lastEnrichedAt && moment(org.lastEnrichedAt).diff(moment(), 'months') > lastEnriched
   }
 
   public async enrichOrganizationsAndSignalDone(): Promise<IOrganizations> {
     const enrichedOrganizations: IOrganizations = []
     const enrichedCacheOrganizations: IOrganizations = []
     for (const instance of await this.queryTenancyOrganizations()) {
-      if (OrganizationEnrichmentService.isRecentlyEnriched(instance)) {
-        // eslint-disable-next-line no-continue
-        continue
-      }
       const data = await this.getEnrichment(instance)
       if (data) {
         const org = this.convertEnrichedDataToOrg(data)
@@ -108,9 +104,15 @@ export default class OrganizationEnrichmentService extends LoggingBase {
   }
 
   private async update(orgs: IOrganizations, cacheOrgs: IOrganizations): Promise<IOrganizations> {
-    // eslint-disable-next-line no-console
-    await OrganizationCacheRepository.bulkUpdate(cacheOrgs, this.options)
-    return OrganizationRepository.bulkUpdate(orgs, this.fields, this.options)
+    try {
+      await OrganizationCacheRepository.bulkUpdate(cacheOrgs, this.options)
+    return await OrganizationRepository.bulkUpdate(orgs, this.fields, this.options)
+      
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.log(error)
+    }
+    return []
   }
 
   private convertEnrichedDataToOrg(data: Awaited<IEnrichmentResponse>): IOrganization {
@@ -168,6 +170,19 @@ export default class OrganizationEnrichmentService extends LoggingBase {
     }
   }
 
+  private static selectFieldsForEnrichment(org: IEnrichableOrganization): IEnrichableOrganization {
+    const fields = ['id', 'cachId', 'name']
+    if(OrganizationEnrichmentService.shouldReenrich(org)) {
+      return org
+    }
+    for(const field of Object.keys(org)) {
+      if(org[field] === null){
+        fields.push(field)
+      }
+    }
+    return lodash.pick(org, fields)
+  }
+
   async queryTenancyOrganizations(): Promise<IEnrichableOrganization[]> {
     const options = await SequelizeRepository.getDefaultIRepositoryOptions()
     const query = `
@@ -183,10 +198,22 @@ export default class OrganizationEnrichmentService extends LoggingBase {
       ,org."location"
       ,org."website"
       ,org."lastEnrichedAt"
+      ,org."twitter"
+      ,org."employees"
+      ,org."size"
+      ,org."founded"
+      ,org."industry"
+      ,org."naics"
+      ,org."profiles"
+      ,org."headline"
+      ,org."ticker"
+      ,org."type"
+      ,org."employeeCountByCountry"
+      ,org."description"
       FROM "organizations" as org
       JOIN "organizationCaches" cach ON org."name" = cach."name"
       JOIN orgActivities activity ON activity."organizationId" = org."id"
-      WHERE :tenantId = org."tenantId"
+      WHERE :tenantId = org."tenantId" AND (org."lastEnrichedAt" IS NULL OR org."lastEnrichedAt" >= NOW() - INTERVAL '6 months')
       ORDER BY org."lastEnrichedAt" ASC, activity."orgActivityCount" DESC, org."createdAt" DESC
       LIMIT :limit
     ;
@@ -201,6 +228,6 @@ export default class OrganizationEnrichmentService extends LoggingBase {
         },
       },
     )
-    return orgs
+    return orgs.map(org => OrganizationEnrichmentService.selectFieldsForEnrichment(org))
   }
 }

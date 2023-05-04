@@ -90,27 +90,22 @@ export default (sequelize) => {
       size: {
         type: DataTypes.TEXT,
         allowNull: true,
-        default: '',
       },
       industry: {
         type: DataTypes.TEXT,
         allowNull: true,
-        default: '',
       },
       naics: {
         type: DataTypes.ARRAY(DataTypes.JSONB),
         allowNull: true,
-        default: [],
       },
       profiles: {
         type: DataTypes.ARRAY(DataTypes.TEXT),
         allowNull: true,
-        default: [],
       },
       headline: {
         type: DataTypes.TEXT,
         allowNull: true,
-        default: '',
       },
       ticker: {
         type: DataTypes.TEXT,
@@ -123,7 +118,6 @@ export default (sequelize) => {
       employeeCountByCountry: {
         type: DataTypes.JSONB,
         allowNull: true,
-        default: {},
       },
       lastEnrichedAt: {
         type: DataTypes.DATE,

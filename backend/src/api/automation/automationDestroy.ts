@@ -21,6 +21,7 @@ export default async (req, res) => {
   await new AutomationService(req).destroy(req.params.automationId)
 
   track('Automation Destroyed', { id: req.params.automationId }, { ...req })
+
   identifyTenant(req)
 
   await req.responseHandler.success(req, res, true, 204)

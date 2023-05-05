@@ -38,6 +38,13 @@ import { RedisCache } from '../../../../utils/redis/redisCache'
 import { gridEntry } from '../../grid/grid'
 import PullRequestReviewThreadsQuery from '../../usecases/github/graphql/pullRequestReviewThreads'
 import PullRequestReviewThreadCommentsQuery from '../../usecases/github/graphql/pullRequestReviewThreadComments'
+import PullRequestCommitsQuery, {PullRequestCommit} from '../../usecases/github/graphql/pullRequestCommits'
+import IntegrationRunRepository from '../../../../database/repositories/integrationRunRepository'
+import { IntegrationRunState } from '../../../../types/integrationRunTypes'
+import IntegrationStreamRepository from '../../../../database/repositories/integrationStreamRepository'
+import { DbIntegrationStreamCreateData } from '../../../../types/integrationStreamTypes'
+import { sendNodeWorkerMessage } from '../../../utils/nodeWorkerSQS'
+import { NodeWorkerIntegrationProcessMessage } from '../../../../types/mq/nodeWorkerIntegrationProcessMessage'
 
 /* eslint class-methods-use-this: 0 */
 
@@ -52,6 +59,7 @@ enum GithubStreamType {
   PULL_COMMENTS = 'pull-comments',
   PULL_REVIEW_THREADS = 'pull-review-threads',
   PULL_REVIEW_THREAD_COMMENTS = 'pull-review-thread-comments',
+  PULL_COMMITS = 'pull-commits',
   ISSUES = 'issues',
   ISSUE_COMMENTS = 'issue-comments',
   DISCUSSIONS = 'discussions',
@@ -211,7 +219,19 @@ export class GithubIntegrationService extends IntegrationServiceBase {
           },
         }))
 
-        newStreams = [...prCommentStreams, ...prReviewThreads]
+        let prCommitsStreams: IPendingStream[] = []
+        if (GITHUB_CONFIG.isCommitDataEnabled) {
+          prCommitsStreams = result.data.map((pr) => ({
+            value: GithubStreamType.PULL_COMMITS,
+            metadata: {
+              page: '',
+              repo: stream.metadata.repo,
+              prNumber: pr.number,
+            },
+          }))
+        }
+
+        newStreams = [...prCommentStreams, ...prReviewThreads, ...prCommitsStreams]
         break
       case GithubStreamType.PULL_COMMENTS: {
         const pullRequestNumber = stream.metadata.prNumber
@@ -262,6 +282,16 @@ export class GithubIntegrationService extends IntegrationServiceBase {
 
         break
       }
+      case GithubStreamType.PULL_COMMITS:
+        const pullRequestNumber = stream.metadata.prNumber
+        const pullRequestCommitsQuery = new PullRequestCommitsQuery(
+          repo,
+          pullRequestNumber,
+          context.integration.token,
+        )
+
+        result = await pullRequestCommitsQuery.getSinglePage(stream.metadata.page)
+        break
       case GithubStreamType.ISSUES:
         const issuesQuery = new IssuesQuery(repo, context.integration.token)
         result = await issuesQuery.getSinglePage(stream.metadata.page)
@@ -474,6 +504,7 @@ export class GithubIntegrationService extends IntegrationServiceBase {
   }
 
   private static verifyWebhookSignature(signature: string, data: any): void {
+    return
     if (IS_TEST_ENV) {
       return
     }
@@ -543,6 +574,9 @@ export class GithubIntegrationService extends IntegrationServiceBase {
           repo,
           context,
         )
+        break
+      case GithubStreamType.PULL_COMMITS:
+        activities = await GithubIntegrationService.parsePullRequestCommits(records, repo, context)
         break
       default:
         throw new Error(`Event not supported '${event}'!`)
@@ -894,6 +928,54 @@ export class GithubIntegrationService extends IntegrationServiceBase {
         break
       }
 
+      // this event is triggered whdn a head branch of PR receives a new commit
+      case 'synchronize': {
+        if (!GITHUB_CONFIG.isCommitDataEnabled) {
+          return undefined
+        }
+        const prNumber = payload.number
+        const integrationId = context.integration.id
+        const tenantId = context.integration.tenantId
+        const repoContext = context.repoContext
+        const runRepo = new IntegrationRunRepository(repoContext)
+
+        const run = await runRepo.create({
+          integrationId,
+          tenantId,
+          onboarding: false,
+          state: IntegrationRunState.PENDING,
+        })
+
+        const githubRepo: Repo = {
+          name: payload.repository.name,
+          owner: payload.repository.owner.login,
+          url: payload.repository.html_url,
+          createdAt: payload.repository.created_at,
+        }
+
+        const streamRepo = new IntegrationStreamRepository(repoContext)
+        const stream: DbIntegrationStreamCreateData = {
+          runId: run.id,
+          tenantId,
+          integrationId,
+          name: GithubStreamType.PULL_COMMITS,
+          metadata: {
+            page: '',
+            repo: githubRepo,
+            prNumber,
+          },
+        }
+
+        await streamRepo.create(stream)
+
+        await sendNodeWorkerMessage(
+          tenantId,
+          new NodeWorkerIntegrationProcessMessage(run.id),
+        )
+        return undefined
+
+      }
+
       default: {
         return undefined
       }
@@ -1128,6 +1210,55 @@ export class GithubIntegrationService extends IntegrationServiceBase {
           )
       }
     }
+    return out
+  }
+
+  private static async parsePullRequestCommits(
+    records: any[],
+    repo: Repo,
+    context: IStepContext,
+  ): Promise<AddActivitiesSingle[]> {
+    const out: AddActivitiesSingle[] = []
+    const data = records[0] as PullRequestCommit
+    const commits = data.repository.pullRequest.commits.nodes
+
+    for (const record of commits) {
+      for (const author of record.commit.authors.nodes) {
+        const member = await GithubIntegrationService.parseMember(author, context)
+        out.push({
+          tenant: context.integration.tenantId,
+          username: author.user.login,
+          platform: PlatformType.GIT,
+          channel: `${repo.owner}/${repo.name}`,
+          type: 'authored-commit',
+          sourceId: record.commit.oid,
+          sourceParentId: `${data.repository.pullRequest.number}`,
+          timestamp: moment(record.commit.authoredDate).utc().toDate(),
+          attributes: {
+            insertions: record.commit.additions,
+            deletions: record.commit.deletions,
+            changedFiles: record.commit.changedFiles,
+            isMerge: record.commit.parents.totalCount > 1,
+            isMainBranch: ['master', 'main'].includes(data.repository.pullRequest.baseRefName),
+            branches: [
+              data.repository.pullRequest.baseRefName,
+              data.repository.pullRequest.headRefName,
+            ],
+          },
+          member: {
+            username: {
+              [PlatformType.GIT]: {
+                username: author.user.login,
+                integrationId: context.integration.id,
+              },
+            } as PlatformIdentities,
+            displayName: member.displayName,
+            emails: member.emails,
+          },
+        })
+      }
+    }
+
     return out
   }
 

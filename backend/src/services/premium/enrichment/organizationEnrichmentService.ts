@@ -26,24 +26,7 @@ export default class OrganizationEnrichmentService extends LoggingBase {
 
   private readonly maxOrganizationsLimit: number
 
-  private readonly fields = [
-    'name',
-    'location',
-    'website',
-    'description',
-    'employeeCountByCountry',
-    'type',
-    'ticker',
-    'headline',
-    'profiles',
-    'naics',
-    'industry',
-    'founded',
-    'size',
-    'employees',
-    'twitter',
-    'lastEnrichedAt',
-  ]
+  private fields = []
 
   options: IServiceOptions
 
@@ -105,7 +88,7 @@ export default class OrganizationEnrichmentService extends LoggingBase {
 
   private async update(orgs: IOrganizations, cacheOrgs: IOrganizations): Promise<IOrganizations> {
     try {
-      await OrganizationCacheRepository.bulkUpdate(cacheOrgs, this.options)
+    await OrganizationCacheRepository.bulkUpdate(cacheOrgs, this.options)
     return await OrganizationRepository.bulkUpdate(orgs, this.fields, this.options)
       
     } catch (error) {
@@ -170,17 +153,17 @@ export default class OrganizationEnrichmentService extends LoggingBase {
     }
   }
 
-  private static selectFieldsForEnrichment(org: IEnrichableOrganization): IEnrichableOrganization {
-    const fields = ['id', 'cachId', 'name']
+  private selectFieldsForEnrichment(org: IEnrichableOrganization): IEnrichableOrganization {
+    this.fields.push('name', 'lastEnrichedAt')
     if(OrganizationEnrichmentService.shouldReenrich(org)) {
       return org
     }
     for(const field of Object.keys(org)) {
       if(org[field] === null){
-        fields.push(field)
+        this.fields.push(field)
       }
     }
-    return lodash.pick(org, fields)
+    return lodash.pick(org, ['id', 'cachId', ...this.fields])
   }
 
   async queryTenancyOrganizations(): Promise<IEnrichableOrganization[]> {
@@ -228,6 +211,6 @@ export default class OrganizationEnrichmentService extends LoggingBase {
         },
       },
     )
-    return orgs.map(org => OrganizationEnrichmentService.selectFieldsForEnrichment(org))
+    return orgs.map(org => this.selectFieldsForEnrichment(org))
   }
 }

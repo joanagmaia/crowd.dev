@@ -12,13 +12,14 @@ import getCleanString from '../../utils/getCleanString'
 import SettingsRepository from './settingsRepository'
 import Plans from '../../security/plans'
 
-
 const { Op } = Sequelize
 
 const forbiddenTenantUrls = ['www']
 
 class TenantRepository {
-  static async filterPayingTenantIds(options: IRepositoryOptions): Promise<({id: string} & {})[]> {
+  static async filterPayingTenantIds(
+    options: IRepositoryOptions,
+  ): Promise<({ id: string } & {})[]> {
     const database = SequelizeRepository.getSequelize(options)
     const plans = Plans.values
 
@@ -32,7 +33,7 @@ class TenantRepository {
     return database.query(query, {
       type: QueryTypes.SELECT,
       replacements: {
-        growth: plans.growth
+        growth: plans.growth,
       },
     })
   }

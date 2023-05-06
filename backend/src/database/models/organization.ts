@@ -29,7 +29,7 @@ export default (sequelize) => {
       description: {
         type: DataTypes.TEXT,
         allowNull: true,
-        comment: 'A detailed description of the company'
+        comment: 'A detailed description of the company',
       },
       url: {
         type: DataTypes.TEXT,
@@ -110,17 +110,17 @@ export default (sequelize) => {
       naics: {
         type: DataTypes.ARRAY(DataTypes.JSONB),
         allowNull: true,
-        comment: 'industry classifications for a company according to NAICS'
+        comment: 'industry classifications for a company according to NAICS',
       },
       headline: {
         type: DataTypes.TEXT,
         allowNull: true,
-        comment: 'A brief description of the company'
+        comment: 'A brief description of the company',
       },
       ticker: {
         type: DataTypes.TEXT,
         allowNull: true,
-        comment: "the company's stock symbol"
+        comment: "the company's stock symbol",
       },
       geoLocation: {
         type: DataTypes.STRING,

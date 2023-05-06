@@ -1,6 +1,6 @@
 import { CompanyEnrichmentParams, CompanyResponse } from 'peopledatalabs'
 
-export type IEnrichmentResponse = CompanyResponse & {address: any, geoLocation: string}
+export type IEnrichmentResponse = CompanyResponse & { address: any; geoLocation: string }
 
 export type EnrichmentParams = CompanyEnrichmentParams
 export type IOrganizations = IOrganization[]

@@ -11,7 +11,11 @@ import { QueryOutput } from './filters/queryTypes'
 const { Op } = Sequelize
 
 class OrganizationRepository {
-  static async filterByPayingTenant<T extends object>(tenantId: string, limit: number, options: IRepositoryOptions): Promise<T[]> {
+  static async filterByPayingTenant<T extends object>(
+    tenantId: string,
+    limit: number,
+    options: IRepositoryOptions,
+  ): Promise<T[]> {
     const database = SequelizeRepository.getSequelize(options)
     const query = `
       with orgActivities as (
@@ -48,16 +52,13 @@ class OrganizationRepository {
       LIMIT :limit
     ;
     `
-    const orgs: T[] = await database.query(
-      query,
-      {
-        type: QueryTypes.SELECT,
-        replacements: {
-          tenantId,
-          limit,
-        },
+    const orgs: T[] = await database.query(query, {
+      type: QueryTypes.SELECT,
+      replacements: {
+        tenantId,
+        limit,
       },
-    )
+    })
     return orgs
   }
 

@@ -20,7 +20,7 @@ import RedisPubSubEmitter from '../../../utils/redis/pubSubEmitter'
 export default class OrganizationEnrichmentService extends LoggingBase {
   tenantId: string
 
-  fields  = new Set<string>(['name', 'lastEnrichedAt'])
+  fields = new Set<string>(['name', 'lastEnrichedAt'])
 
   private readonly apiKey: string
 
@@ -72,9 +72,9 @@ export default class OrganizationEnrichmentService extends LoggingBase {
     const enrichedOrganizations: IOrganizations = []
     const enrichedCacheOrganizations: IOrganizations = []
     for (const instance of await OrganizationRepository.filterByPayingTenant<IEnrichableOrganization>(
-      this.tenantId, 
+      this.tenantId,
       this.maxOrganizationsLimit,
-      this.options
+      this.options,
     )) {
       const data = await this.getEnrichment(instance)
       if (data) {
@@ -93,7 +93,10 @@ export default class OrganizationEnrichmentService extends LoggingBase {
     return OrganizationRepository.bulkUpdate(orgs, [...this.fields], this.options)
   }
 
-  private convertEnrichedDataToOrg(data: Awaited<IEnrichmentResponse>, instance: IEnrichableOrganization): IOrganization {
+  private convertEnrichedDataToOrg(
+    data: Awaited<IEnrichmentResponse>,
+    instance: IEnrichableOrganization,
+  ): IOrganization {
     let location = null
     data = renameKeys(data, {
       summary: 'description',
@@ -101,14 +104,14 @@ export default class OrganizationEnrichmentService extends LoggingBase {
       twitter_url: 'twitter',
       location: 'address',
     })
-    if(data.address) {
+    if (data.address) {
       data.geoLocation = data.address.geo ?? null
       delete data.address.geo
       location = `${data.address.street_address} ${data.address.address_line_2} ${data.address.name}`
     }
     return lodash.pick(
-      {...data, location, lastEnrichedAt: new Date()}, 
-      this.selectFieldsForEnrichment(instance)
+      { ...data, location, lastEnrichedAt: new Date() },
+      this.selectFieldsForEnrichment(instance),
     )
   }
 
@@ -153,14 +156,14 @@ export default class OrganizationEnrichmentService extends LoggingBase {
   }
 
   private selectFieldsForEnrichment(org: IEnrichableOrganization): string[] {
-    if(!OrganizationEnrichmentService.shouldReenrich(org)) {
-      for(const field of Object.keys(org)) {
-        if(org[field] === null){
+    if (!OrganizationEnrichmentService.shouldReenrich(org)) {
+      for (const field of Object.keys(org)) {
+        if (org[field] === null) {
           this.fields.add(field)
         }
       }
     }
-    
+
     return ['id', 'cachId', ...this.fields]
   }
 }

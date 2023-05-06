@@ -17,11 +17,6 @@ export default (sequelize) => {
         type: DataTypes.TEXT,
         allowNull: true,
       },
-      address: {
-        type: DataTypes.JSONB,
-        allowNull: true,
-        comment: "granular information about the location of the company's current headquarters.",
-      },
       location: {
         type: DataTypes.TEXT,
         allowNull: true,
@@ -134,6 +129,11 @@ export default (sequelize) => {
       employeeCountByCountry: {
         type: DataTypes.JSONB,
         allowNull: true,
+      },
+      address: {
+        type: DataTypes.JSONB,
+        allowNull: true,
+        comment: "granular information about the location of the company's current headquarters.",
       },
       lastEnrichedAt: {
         type: DataTypes.DATE,

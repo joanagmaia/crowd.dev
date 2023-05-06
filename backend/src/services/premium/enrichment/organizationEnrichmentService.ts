@@ -1,7 +1,6 @@
 import PDLJS from 'peopledatalabs'
 import moment from 'moment'
 import lodash from 'lodash'
-import { QueryTypes } from 'sequelize'
 import { LoggingBase } from '../../loggingBase'
 import {
   EnrichmentParams,
@@ -17,16 +16,15 @@ import OrganizationCacheRepository from '../../../database/repositories/organiza
 import { ApiWebsocketMessage } from '../../../types/mq/apiWebsocketMessage'
 import { createRedisClient } from '../../../utils/redis'
 import RedisPubSubEmitter from '../../../utils/redis/pubSubEmitter'
-import SequelizeRepository from '../../../database/repositories/sequelizeRepository'
 
 export default class OrganizationEnrichmentService extends LoggingBase {
   tenantId: string
 
+  fields  = new Set<string>(['name', 'lastEnrichedAt'])
+
   private readonly apiKey: string
 
   private readonly maxOrganizationsLimit: number
-
-  private fields = []
 
   options: IServiceOptions
 
@@ -67,16 +65,20 @@ export default class OrganizationEnrichmentService extends LoggingBase {
   }
 
   static shouldReenrich(org: IOrganization, lastEnriched = 6): boolean {
-    return org.lastEnrichedAt && moment(org.lastEnrichedAt).diff(moment(), 'months') > lastEnriched
+    return org.lastEnrichedAt && moment(org.lastEnrichedAt).diff(moment(), 'months') >= lastEnriched
   }
 
   public async enrichOrganizationsAndSignalDone(): Promise<IOrganizations> {
     const enrichedOrganizations: IOrganizations = []
     const enrichedCacheOrganizations: IOrganizations = []
-    for (const instance of await this.queryTenancyOrganizations()) {
+    for (const instance of await OrganizationRepository.filterByPayingTenant<IEnrichableOrganization>(
+      this.tenantId, 
+      this.maxOrganizationsLimit,
+      this.options
+    )) {
       const data = await this.getEnrichment(instance)
       if (data) {
-        const org = this.convertEnrichedDataToOrg(data)
+        const org = this.convertEnrichedDataToOrg(data, instance)
         enrichedOrganizations.push({ ...org, id: instance.id, tenantId: this.tenantId })
         enrichedCacheOrganizations.push({ ...org, id: instance.cachId })
       }
@@ -87,30 +89,27 @@ export default class OrganizationEnrichmentService extends LoggingBase {
   }
 
   private async update(orgs: IOrganizations, cacheOrgs: IOrganizations): Promise<IOrganizations> {
-    try {
     await OrganizationCacheRepository.bulkUpdate(cacheOrgs, this.options)
-    return await OrganizationRepository.bulkUpdate(orgs, this.fields, this.options)
-      
-    } catch (error) {
-      // eslint-disable-next-line no-console
-      console.log(error)
-    }
-    return []
+    return OrganizationRepository.bulkUpdate(orgs, [...this.fields], this.options)
   }
 
-  private convertEnrichedDataToOrg(data: Awaited<IEnrichmentResponse>): IOrganization {
+  private convertEnrichedDataToOrg(data: Awaited<IEnrichmentResponse>, instance: IEnrichableOrganization): IOrganization {
+    let location = null
     data = renameKeys(data, {
       summary: 'description',
-      employeeCountByCountry: 'employee_count_by_country',
+      employee_count_by_country: 'employeeCountByCountry',
       twitter_url: 'twitter',
+      location: 'address',
     })
-    const lastEnrichedAt = new Date()
-    const location = `
-      ${data.location.street_address} ${data.location.address_line_2} ${data.location.name}
-    `
-    const org: IOrganization = lodash.pick(data, this.fields)
-
-    return Object.assign(org, { lastEnrichedAt, location })
+    if(data.address) {
+      data.geoLocation = data.address.geo ?? null
+      delete data.address.geo
+      location = `${data.address.street_address} ${data.address.address_line_2} ${data.address.name}`
+    }
+    return lodash.pick(
+      {...data, location, lastEnrichedAt: new Date()}, 
+      this.selectFieldsForEnrichment(instance)
+    )
   }
 
   private async sendDoneSignal(organizations: IOrganizations) {
@@ -153,64 +152,15 @@ export default class OrganizationEnrichmentService extends LoggingBase {
     }
   }
 
-  private selectFieldsForEnrichment(org: IEnrichableOrganization): IEnrichableOrganization {
-    this.fields.push('name', 'lastEnrichedAt')
-    if(OrganizationEnrichmentService.shouldReenrich(org)) {
-      return org
-    }
-    for(const field of Object.keys(org)) {
-      if(org[field] === null){
-        this.fields.push(field)
+  private selectFieldsForEnrichment(org: IEnrichableOrganization): string[] {
+    if(!OrganizationEnrichmentService.shouldReenrich(org)) {
+      for(const field of Object.keys(org)) {
+        if(org[field] === null){
+          this.fields.add(field)
+        }
       }
     }
-    return lodash.pick(org, ['id', 'cachId', ...this.fields])
-  }
-
-  async queryTenancyOrganizations(): Promise<IEnrichableOrganization[]> {
-    const options = await SequelizeRepository.getDefaultIRepositoryOptions()
-    const query = `
-      with orgActivities as (
-        SELECT memOrgs."organizationId", SUM(actAgg."activityCount") "orgActivityCount"
-        FROM "memberActivityAggregatesMVs" actAgg
-        INNER JOIN "memberOrganizations" memOrgs ON actAgg."id"=memOrgs."memberId"
-        GROUP BY memOrgs."organizationId"
-      ) 
-      SELECT org.id "id"
-      ,cach.id "cachId"
-      ,org."name"
-      ,org."location"
-      ,org."website"
-      ,org."lastEnrichedAt"
-      ,org."twitter"
-      ,org."employees"
-      ,org."size"
-      ,org."founded"
-      ,org."industry"
-      ,org."naics"
-      ,org."profiles"
-      ,org."headline"
-      ,org."ticker"
-      ,org."type"
-      ,org."employeeCountByCountry"
-      ,org."description"
-      FROM "organizations" as org
-      JOIN "organizationCaches" cach ON org."name" = cach."name"
-      JOIN orgActivities activity ON activity."organizationId" = org."id"
-      WHERE :tenantId = org."tenantId" AND (org."lastEnrichedAt" IS NULL OR org."lastEnrichedAt" >= NOW() - INTERVAL '6 months')
-      ORDER BY org."lastEnrichedAt" ASC, activity."orgActivityCount" DESC, org."createdAt" DESC
-      LIMIT :limit
-    ;
-    `
-    const orgs: IEnrichableOrganization[] = await SequelizeRepository.getSequelize(options).query(
-      query,
-      {
-        type: QueryTypes.SELECT,
-        replacements: {
-          tenantId: this.tenantId,
-          limit: this.maxOrganizationsLimit,
-        },
-      },
-    )
-    return orgs.map(org => this.selectFieldsForEnrichment(org))
+    
+    return ['id', 'cachId', ...this.fields]
   }
 }

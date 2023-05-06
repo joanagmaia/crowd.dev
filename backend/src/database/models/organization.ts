@@ -17,6 +17,11 @@ export default (sequelize) => {
         type: DataTypes.TEXT,
         allowNull: true,
       },
+      address: {
+        type: DataTypes.JSONB,
+        allowNull: true,
+        comment: "granular information about the location of the company's current headquarters.",
+      },
       location: {
         type: DataTypes.TEXT,
         allowNull: true,
@@ -24,6 +29,7 @@ export default (sequelize) => {
       description: {
         type: DataTypes.TEXT,
         allowNull: true,
+        comment: 'A detailed description of the company'
       },
       url: {
         type: DataTypes.TEXT,
@@ -99,26 +105,31 @@ export default (sequelize) => {
       size: {
         type: DataTypes.TEXT,
         allowNull: true,
+        comment: 'A range representing the size of the company.',
       },
       naics: {
         type: DataTypes.ARRAY(DataTypes.JSONB),
         allowNull: true,
-      },
-      profiles: {
-        type: DataTypes.ARRAY(DataTypes.TEXT),
-        allowNull: true,
+        comment: 'industry classifications for a company according to NAICS'
       },
       headline: {
         type: DataTypes.TEXT,
         allowNull: true,
+        comment: 'A brief description of the company'
       },
       ticker: {
         type: DataTypes.TEXT,
+        allowNull: true,
+        comment: "the company's stock symbol"
+      },
+      geoLocation: {
+        type: DataTypes.STRING,
         allowNull: true,
       },
       type: {
         type: DataTypes.TEXT,
         allowNull: true,
+        comment: "The comnapny's type. For example NGO",
       },
       employeeCountByCountry: {
         type: DataTypes.JSONB,

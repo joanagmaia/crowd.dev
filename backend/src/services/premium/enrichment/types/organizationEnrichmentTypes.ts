@@ -1,6 +1,6 @@
 import { CompanyEnrichmentParams, CompanyResponse } from 'peopledatalabs'
 
-export type IEnrichmentResponse = CompanyResponse
+export type IEnrichmentResponse = CompanyResponse & {address: any, geoLocation: string}
 
 export type EnrichmentParams = CompanyEnrichmentParams
 export type IOrganizations = IOrganization[]
@@ -23,6 +23,8 @@ export interface IOrganization {
   employees?: IEnrichmentResponse['size']
   twitter?: IEnrichmentResponse['twitter_url']
   lastEnrichedAt?: Date
+  geoLocation?: String
+  address?: IEnrichmentResponse['location']
 }
 
 export interface IEnrichableOrganization extends IOrganization {

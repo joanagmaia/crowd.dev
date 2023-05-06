@@ -9,7 +9,7 @@ import eagleEyeEmailDigestTicks from './eagleEyeEmailDigestTicks'
 import integrationDataChecker from './integrationDataChecker'
 import mergeSuggestions from './mergeSuggestions'
 import refreshSampleData from './refreshSampleData'
-import cleanUpIntegrationRuns from './cleanUpIntegrationRuns'
+import cleanUp from './cleanUp'
 import checkStuckIntegrationRuns from './checkStuckIntegrationRuns'
 import enrichOrganizations from './organizationEnricher'
 
@@ -24,7 +24,7 @@ const jobs: CrowdJob[] = [
   integrationDataChecker,
   mergeSuggestions,
   refreshSampleData,
-  cleanUpIntegrationRuns,
+  cleanUp,
   checkStuckIntegrationRuns,
   enrichOrganizations,
 ]

@@ -79,6 +79,10 @@ export default (sequelize) => {
         type: DataTypes.TEXT,
         allowNull: true,
       },
+      website: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+      },
       founded: {
         type: DataTypes.INTEGER,
         allowNull: true,

@@ -15,8 +15,8 @@ describe('TenantRepository tests', () => {
     done()
   })
 
-  describe('generateTenantUrl method', () => {
-    it('should return none tenants noit using the essential plan', async () => {
+  describe('getPayingTenantIds method', () => {
+    it('should return tenants not using the essential plan', async () => {
       const ToCreatePLanForEssentialPlanTenantOnTrial = {
         name: 'essential tenant name',
         url: 'an-essential-tenant-name',
@@ -30,9 +30,9 @@ describe('TenantRepository tests', () => {
       const options = await SequelizeTestUtils.getTestIRepositoryOptions(db)
       await options.database.tenant.create(ToCreatePLanForEssentialPlanTenantOnTrial)
       const growthTenant = await options.database.tenant.create(ToCreatPlanForGrowthTenantOnTrial)
-      const tenantIds =  await TenantRepository.filterPayingTenantIds(options)
+      const tenantIds =  await TenantRepository.getPayingTenantIds(options)
 
-      
+
       expect(tenantIds).toHaveLength(1)
       expect(growthTenant.id).toStrictEqual(tenantIds[0])
     })

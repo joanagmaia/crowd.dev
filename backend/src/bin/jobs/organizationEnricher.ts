@@ -15,7 +15,7 @@ const job: CrowdJob = {
 async function sendWorkerMessage() {
   const options = await SequelizeRepository.getDefaultIRepositoryOptions()
 
-  for (const { id } of await TenantRepository.filterPayingTenantIds(options)) {
+  for (const { id } of await TenantRepository.getPayingTenantIds(options)) {
     await sendNodeWorkerMessage(id, {
       type: NodeWorkerMessageType.NODE_MICROSERVICE,
       service: 'enrich-organizations',

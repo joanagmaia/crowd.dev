@@ -33,7 +33,7 @@ describe('TenantRepository tests', () => {
       const tenantIds = await TenantRepository.getPayingTenantIds(options)
 
       expect(tenantIds).toHaveLength(1)
-      expect(growthTenant.id).toStrictEqual(tenantIds[0])
+      expect(growthTenant.id).toStrictEqual(tenantIds[0].id)
     })
   })
 

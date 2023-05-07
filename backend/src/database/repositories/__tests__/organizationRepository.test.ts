@@ -211,6 +211,16 @@ describe('OrganizationRepository tests', () => {
     })
   })
 
+  describe('filterByPayingTenant method', () => {
+    it('should successfully find created organization with paying tenancy using tenancy Id', async () => {
+      const mockIRepositoryOptions = await SequelizeTestUtils.getTestIRepositoryOptions(db)
+    })
+
+    it('should order organization by "descending # of activities" and "ascending date joined"', () => {})
+
+    it('should fetch a maximum of 200 organizations by tenant Id', () => {})
+  })
+
   describe('findById method', () => {
     it('Should successfully find created organization by id', async () => {
       const mockIRepositoryOptions = await SequelizeTestUtils.getTestIRepositoryOptions(db)

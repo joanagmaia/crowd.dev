@@ -110,6 +110,10 @@ class OrganizationCacheRepository {
       },
     )
 
+    if (!record) {
+      throw new Error404()
+    }
+
     await this._createAuditLog(AuditLogRepository.UPDATE, record, data, options)
 
     return this.findById(record.id, options)

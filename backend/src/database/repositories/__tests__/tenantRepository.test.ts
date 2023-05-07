@@ -30,8 +30,7 @@ describe('TenantRepository tests', () => {
       const options = await SequelizeTestUtils.getTestIRepositoryOptions(db)
       await options.database.tenant.create(ToCreatePLanForEssentialPlanTenantOnTrial)
       const growthTenant = await options.database.tenant.create(ToCreatPlanForGrowthTenantOnTrial)
-      const tenantIds =  await TenantRepository.getPayingTenantIds(options)
-
+      const tenantIds = await TenantRepository.getPayingTenantIds(options)
 
       expect(tenantIds).toHaveLength(1)
       expect(growthTenant.id).toStrictEqual(tenantIds[0])

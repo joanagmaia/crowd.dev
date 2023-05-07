@@ -17,9 +17,7 @@ const { Op } = Sequelize
 const forbiddenTenantUrls = ['www']
 
 class TenantRepository {
-  static async getPayingTenantIds(
-    options: IRepositoryOptions,
-  ): Promise<({ id: string } & {})[]> {
+  static async getPayingTenantIds(options: IRepositoryOptions): Promise<({ id: string } & {})[]> {
     const database = SequelizeRepository.getSequelize(options)
     const plans = Plans.values
     const transaction = SequelizeRepository.getTransaction(options)

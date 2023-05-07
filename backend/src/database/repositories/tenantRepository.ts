@@ -17,7 +17,9 @@ const { Op } = Sequelize
 const forbiddenTenantUrls = ['www']
 
 class TenantRepository {
-  static async getPayingTenantIds(options: IRepositoryOptions): Promise<({ id: string } & {})[]> {
+  static async getPayingTenantIds(
+    options: IRepositoryOptions,
+  ): Promise<({ id: string } & {})[]> {
     const database = SequelizeRepository.getSequelize(options)
     const plans = Plans.values
     const transaction = SequelizeRepository.getTransaction(options)
@@ -26,14 +28,14 @@ class TenantRepository {
       SELECT "id"
       FROM "tenants"
       WHERE tenants."plan" IN (:growth)
-        OR (tenants."isTrialPlan" is true AND tenants."plan" = :plan)
+        OR (tenants."isTrialPlan" is true AND tenants."plan" = :growth)
       ;
     `
     return database.query(query, {
       type: QueryTypes.SELECT,
       transaction,
       replacements: {
-        plan: plans.growth,
+        growth: plans.growth,
       },
     })
   }

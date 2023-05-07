@@ -50,7 +50,6 @@ const toCreate = {
   founded: null,
   employeeCountByCountry: null,
   address: null,
-  
 }
 
 describe('OrganizationCacheCacheRepository tests', () => {

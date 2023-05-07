@@ -16,6 +16,29 @@ describe('TenantRepository tests', () => {
   })
 
   describe('generateTenantUrl method', () => {
+    it('should return none tenants noit using the essential plan', async () => {
+      const ToCreatePLanForEssentialPlanTenantOnTrial = {
+        name: 'essential tenant name',
+        url: 'an-essential-tenant-name',
+        plan: Plans.values.essential,
+      }
+      const ToCreatPlanForGrowthTenantOnTrial = {
+        name: 'growth tenant name',
+        url: 'a-growth-tenant-name',
+        plan: Plans.values.growth,
+      }
+      const options = await SequelizeTestUtils.getTestIRepositoryOptions(db)
+      await options.database.tenant.create(ToCreatePLanForEssentialPlanTenantOnTrial)
+      const growthTenant = await options.database.tenant.create(ToCreatPlanForGrowthTenantOnTrial)
+      const tenantIds =  await TenantRepository.filterPayingTenantIds(options)
+
+      
+      expect(tenantIds).toHaveLength(1)
+      expect(growthTenant.id).toStrictEqual(tenantIds[0])
+    })
+  })
+
+  describe('generateTenantUrl method', () => {
     it('Should generate a url from name - 0 existing tenants with same url', async () => {
       const options = await SequelizeTestUtils.getTestIRepositoryOptions(db)
       const tenantName = 'some tenant Name with !@#_% non-alphanumeric characters'

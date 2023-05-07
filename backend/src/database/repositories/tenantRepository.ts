@@ -22,18 +22,20 @@ class TenantRepository {
   ): Promise<({ id: string } & {})[]> {
     const database = SequelizeRepository.getSequelize(options)
     const plans = Plans.values
+    const transaction = SequelizeRepository.getTransaction(options)
 
     const query = `
       SELECT "id"
       FROM "tenants"
       WHERE tenants."plan" IN (:growth)
-        OR (tenants."isTrialPlan" is true AND tenants."plan" = :growth)
+        OR (tenants."isTrialPlan" is true AND tenants."plan" = :plan)
       ;
     `
     return database.query(query, {
       type: QueryTypes.SELECT,
+      transaction,
       replacements: {
-        growth: plans.growth,
+        plan: plans.growth,
       },
     })
   }

@@ -17,6 +17,7 @@ class OrganizationRepository {
     options: IRepositoryOptions,
   ): Promise<T[]> {
     const database = SequelizeRepository.getSequelize(options)
+    const transaction = SequelizeRepository.getTransaction(options)
     const query = `
       with orgActivities as (
         SELECT memOrgs."organizationId", SUM(actAgg."activityCount") "orgActivityCount"
@@ -54,6 +55,7 @@ class OrganizationRepository {
     `
     const orgs: T[] = await database.query(query, {
       type: QueryTypes.SELECT,
+      transaction,
       replacements: {
         tenantId,
         limit,

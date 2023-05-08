@@ -15,6 +15,7 @@ export enum PlatformType {
   PRODUCTHUNT = 'producthunt',
   YOUTUBE = 'youtube',
   STACKOVERFLOW = 'stackoverflow',
+  GIT = 'git',
   OTHER = 'other',
 }
 
@@ -32,6 +33,7 @@ export enum IntegrationType {
   LINKEDIN = 'linkedin',
   CROWD = 'crowd',
   STACKOVERFLOW = 'stackoverflow',
+  GIT = 'git',
 }
 
 export const integrationLabel: Record<IntegrationType, string> = {

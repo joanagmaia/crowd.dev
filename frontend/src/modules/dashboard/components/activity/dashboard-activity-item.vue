@@ -59,6 +59,10 @@
                   />
                 </el-tooltip>
               </div>
+              <i
+                v-else
+                class="ri-radar-line text-base text-gray-400"
+              />
               <p class="flex text-2xs leading-4 pl-2">
                 <app-activity-message
                   :activity="activity"
@@ -125,7 +129,7 @@
                 ><i
                    class="ri-lg ri-external-link-line mr-1"
                  />
-                  <span class="block">Open on {{ platform.name || 'platform' }}</span></a>
+                  <span class="block">Open on {{ platform?.name || 'platform' }}</span></a>
               </div>
             </template>
           </app-activity-content>
@@ -175,7 +179,7 @@ export default {
     platform() {
       return CrowdIntegrations.getConfig(
         this.activity.platform,
-      ) || {};
+      );
     },
     timeAgo() {
       return formatDateToTimeAgo(this.activity.timestamp);

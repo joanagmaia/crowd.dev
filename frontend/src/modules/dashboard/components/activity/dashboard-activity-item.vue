@@ -46,7 +46,7 @@
               with-link
             />
             <div class="flex items-center">
-              <div>
+              <div v-if="platform">
                 <el-tooltip
                   effect="dark"
                   :content="platform.name"
@@ -125,7 +125,7 @@
                 ><i
                    class="ri-lg ri-external-link-line mr-1"
                  />
-                  <span class="block">Open on {{ platform.name }}</span></a>
+                  <span class="block">Open on {{ platform.name || 'platform' }}</span></a>
               </div>
             </template>
           </app-activity-content>
@@ -175,7 +175,7 @@ export default {
     platform() {
       return CrowdIntegrations.getConfig(
         this.activity.platform,
-      );
+      ) || {};
     },
     timeAgo() {
       return formatDateToTimeAgo(this.activity.timestamp);

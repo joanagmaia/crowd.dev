@@ -53,8 +53,8 @@ export const newActivityBlocks = (activity) => {
   if (engagementLevel.length > 0) {
     memberProperties.push(`*Engagement level:* ${engagementLevel}`)
   }
-  if (activity.member.username) {
-    const platforms = Object.keys(activity.member.username)
+  if (activity.member.activeOn) {
+    const platforms = activity.member.activeOn
       .map((platform) => integrationLabel[platform] || platform)
       .join(' | ')
     memberProperties.push(`*Active on:* ${platforms}`)
@@ -116,9 +116,11 @@ export const newActivityBlocks = (activity) => {
                   type: 'section',
                   text: {
                     type: 'mrkdwn',
-                    text: `${activity.title ? `*${htmlToMrkdwn(activity.title).text}* \n ` : ''}${
-                      htmlToMrkdwn(activity.body).text
-                    }`,
+                    text: `${
+                      activity.title && activity.title !== activity.display.default
+                        ? `*${htmlToMrkdwn(activity.title).text}* \n `
+                        : ''
+                    }${htmlToMrkdwn(activity.body).text}`,
                   },
                 },
               ],

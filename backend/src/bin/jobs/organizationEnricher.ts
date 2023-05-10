@@ -16,6 +16,8 @@ async function sendWorkerMessage() {
   const options = await SequelizeRepository.getDefaultIRepositoryOptions()
 
   for (const { id } of await TenantRepository.getPayingTenantIds(options)) {
+    // eslint-disable-next-line no-console
+    console.log(id)
     await sendNodeWorkerMessage(id, {
       type: NodeWorkerMessageType.NODE_MICROSERVICE,
       service: 'enrich-organizations',

@@ -1,4 +1,4 @@
-<template>
+Z<template>
   <slot
     name="footer"
     v-bind="{

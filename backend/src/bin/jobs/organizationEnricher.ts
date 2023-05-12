@@ -16,14 +16,15 @@ const job: CrowdJob = {
 async function sendWorkerMessage() {
   const options = await SequelizeRepository.getDefaultIRepositoryOptions()
   const log = getServiceLogger()
-
-  for (const { id } of await TenantRepository.getPayingTenantIds(options)) {
+  const tenants = await TenantRepository.getPayingTenantIds(options)
+  log.info(tenants)
+  for (const { id } of tenants) {
    const payload = {
     type: NodeWorkerMessageType.NODE_MICROSERVICE,
     service: 'enrich-organizations',
     tenantId: id,
   } as NodeWorkerMessageBase
-    log.warn({payload}, 'enricher worker payload')
+    log.info({payload}, 'enricher worker payload')
     await sendNodeWorkerMessage(id, payload)
   }
 }

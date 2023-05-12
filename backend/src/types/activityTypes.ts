@@ -351,6 +351,8 @@ export const DEFAULT_ACTIVITY_TYPE_SETTINGS: DefaultActivityTypes = {
       },
       isContribution: GitHubGrid.pullRequestReviewRequested.isContribution,
     },
+  },
+  [PlatformType.GIT]: {
     [GitActivityType.AUTHORED_COMMIT]: {
       display: {
         default: 'authored a commit in {channel}',

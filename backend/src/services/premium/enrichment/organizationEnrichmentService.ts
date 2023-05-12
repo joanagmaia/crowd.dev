@@ -58,7 +58,7 @@ export default class OrganizationEnrichmentService extends LoggingBase {
       const data = await PDLClient.company.enrichment({ name, website, locality })
       data.name = name
     } catch (error) {
-      this.options.log.warn({ name, website, locality }, error)
+      this.options.log.warn({ name, website, locality }, 'PDL Data Unavalable', error)
       data = null
     }
     return data

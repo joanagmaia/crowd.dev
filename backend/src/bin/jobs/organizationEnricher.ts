@@ -5,6 +5,7 @@ import { sendNodeWorkerMessage } from '../../serverless/utils/nodeWorkerSQS'
 import { NodeWorkerMessageBase } from '../../types/mq/nodeWorkerMessageBase'
 import { NodeWorkerMessageType } from '../../serverless/types/workerTypes'
 import TenantRepository from '../../database/repositories/tenantRepository'
+import { getServiceLogger } from '../../utils/logging'
 
 const job: CrowdJob = {
   name: 'organization enricher',
@@ -14,15 +15,16 @@ const job: CrowdJob = {
 
 async function sendWorkerMessage() {
   const options = await SequelizeRepository.getDefaultIRepositoryOptions()
+  const log = getServiceLogger()
 
   for (const { id } of await TenantRepository.getPayingTenantIds(options)) {
-    // eslint-disable-next-line no-console
-    console.log(id)
-    await sendNodeWorkerMessage(id, {
-      type: NodeWorkerMessageType.NODE_MICROSERVICE,
-      service: 'enrich-organizations',
-      tenantId: id,
-    } as NodeWorkerMessageBase)
+   const payload = {
+    type: NodeWorkerMessageType.NODE_MICROSERVICE,
+    service: 'enrich-organizations',
+    tenantId: id,
+  } as NodeWorkerMessageBase
+    log.warn({payload}, 'enricher worker payload')
+    await sendNodeWorkerMessage(id, payload)
   }
 }
 

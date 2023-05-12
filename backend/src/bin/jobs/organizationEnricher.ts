@@ -8,7 +8,7 @@ import TenantRepository from '../../database/repositories/tenantRepository'
 
 const job: CrowdJob = {
   name: 'organization enricher',
-  cronTime: cronGenerator.everyMonth(),
+  cronTime: cronGenerator.everyHour(),
   onTrigger: sendWorkerMessage,
 }
 

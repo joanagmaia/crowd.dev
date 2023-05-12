@@ -55,11 +55,11 @@ export default class OrganizationEnrichmentService extends LoggingBase {
     const PDLClient = new PDLJS({ apiKey: this.apiKey })
     let data: null | IEnrichmentResponse
     try {
-      const data = await PDLClient.company.enrichment({ name, website, locality })
+      data = await PDLClient.company.enrichment({name, website, locality})
       data.name = name
     } catch (error) {
       this.options.log.error({ name, website, locality }, 'PDL Data Unavalable', error)
-      data = null
+      return null
     }
     return data
   }

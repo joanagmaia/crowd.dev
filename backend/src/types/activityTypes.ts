@@ -85,7 +85,7 @@ export enum GithubActivityType {
 }
 
 export enum GitActivityType {
-  AUTHORED_COMMIT = 'authored_commit',
+  AUTHORED_COMMIT = 'authored-commit',
 }
 
 export enum HackerNewsActivityType {

@@ -9,7 +9,7 @@ import { getServiceLogger } from '../../utils/logging'
 
 const job: CrowdJob = {
   name: 'organization enricher',
-  cronTime: cronGenerator.everyMonth(),
+  cronTime: cronGenerator.everyHour(),
   onTrigger: sendWorkerMessage,
 }
 
@@ -19,12 +19,12 @@ async function sendWorkerMessage() {
   const tenants = await TenantRepository.getPayingTenantIds(options)
   log.info(tenants)
   for (const { id } of tenants) {
-   const payload = {
-    type: NodeWorkerMessageType.NODE_MICROSERVICE,
-    service: 'enrich-organizations',
-    tenantId: id,
-  } as NodeWorkerMessageBase
-    log.info({payload}, 'enricher worker payload')
+    const payload = {
+      type: NodeWorkerMessageType.NODE_MICROSERVICE,
+      service: 'enrich-organizations',
+      tenantId: id,
+    } as NodeWorkerMessageBase
+    log.info({ payload }, 'enricher worker payload')
     await sendNodeWorkerMessage(id, payload)
   }
 }

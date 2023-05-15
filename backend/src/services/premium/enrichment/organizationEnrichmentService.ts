@@ -55,7 +55,7 @@ export default class OrganizationEnrichmentService extends LoggingBase {
     const PDLClient = new PDLJS({ apiKey: this.apiKey })
     let data: null | IEnrichmentResponse
     try {
-      data = await PDLClient.company.enrichment({name, website, locality})
+      data = await PDLClient.company.enrichment({ name, website, locality })
       data.name = name
     } catch (error) {
       this.options.log.error({ name, website, locality }, 'PDL Data Unavalable', error)
@@ -81,6 +81,15 @@ export default class OrganizationEnrichmentService extends LoggingBase {
         const org = this.convertEnrichedDataToOrg(data, instance)
         enrichedOrganizations.push({ ...org, id: instance.id, tenantId: this.tenantId })
         enrichedCacheOrganizations.push({ ...org, id: instance.cachId })
+      } else {
+        const lastEnrichedAt = new Date()
+        enrichedOrganizations.push({
+          ...instance,
+          id: instance.id,
+          tenantId: this.tenantId,
+          lastEnrichedAt,
+        })
+        enrichedCacheOrganizations.push({ ...instance, id: instance.cachId, lastEnrichedAt })
       }
     }
     const orgs = await this.update(enrichedOrganizations, enrichedCacheOrganizations)
@@ -108,6 +117,13 @@ export default class OrganizationEnrichmentService extends LoggingBase {
       data.geoLocation = data.address.geo ?? null
       delete data.address.geo
       location = `${data.address.street_address} ${data.address.address_line_2} ${data.address.name}`
+    }
+    if (data.employee_count_by_country && !data.employee_count) {
+      const employees = Object.values(data.employee_count_by_country).reduce(
+        (acc, size) => acc + size,
+        0,
+      )
+      Object.assign(data, { employees: employees || instance.employees })
     }
     return lodash.pick(
       { ...data, location, lastEnrichedAt: new Date() },

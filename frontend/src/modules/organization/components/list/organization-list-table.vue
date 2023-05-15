@@ -331,6 +331,7 @@
                 </template>
               </el-table-column>
 
+              <!-- Location -->
               <el-table-column
                 label="Location"
                 width="150"
@@ -359,34 +360,7 @@
                 </template>
               </el-table-column>
 
-              <el-table-column
-                label="Size"
-                width="150"
-                prop="size"
-                sortable
-              >
-                <template #default="scope">
-                  <router-link
-                    :to="{
-                      name: 'organizationView',
-                      params: { id: scope.row.id },
-                    }"
-                    class="block"
-                  >
-                    <div
-                      class="text-sm h-full flex items-center"
-                    >
-                      <span v-if="scope.row.size" class="text-gray-900">
-                        {{
-                          scope.row.size
-                        }}
-                      </span>
-                      <span v-else class="text-gray-500">-</span>
-                    </div>
-                  </router-link>
-                </template>
-              </el-table-column>
-
+              <!-- Industry -->
               <el-table-column
                 label="Industry"
                 width="150"
@@ -415,6 +389,36 @@
                 </template>
               </el-table-column>
 
+              <!-- Size -->
+              <el-table-column
+                label="Size"
+                width="150"
+                prop="size"
+                sortable
+              >
+                <template #default="scope">
+                  <router-link
+                    :to="{
+                      name: 'organizationView',
+                      params: { id: scope.row.id },
+                    }"
+                    class="block"
+                  >
+                    <div
+                      class="text-sm h-full flex items-center"
+                    >
+                      <span v-if="scope.row.size" class="text-gray-900">
+                        {{
+                          scope.row.size
+                        }}
+                      </span>
+                      <span v-else class="text-gray-500">-</span>
+                    </div>
+                  </router-link>
+                </template>
+              </el-table-column>
+
+              <!-- Founded -->
               <el-table-column
                 label="Founded"
                 width="150"
@@ -460,25 +464,19 @@
                       v-if="scope.row.profiles?.length && scope.row.profiles?.some((e) => !!e)"
                       class="text-sm cursor-auto flex flex-wrap gap-1"
                     >
-                      <el-tooltip
-                        v-for="profile of scope.row.profiles
-                          || []"
-                        :key="profile"
-                        :disabled="!profile"
-                        popper-class="custom-identity-tooltip"
-                        placement="top"
+                      <app-tags
+                        :tags="scope.row.profiles"
+                        :interactive="true"
+                        :collapse-tags="true"
+                        :collapse-tags-tooltip="true"
                       >
-                        <template #content>
+                        <template #tagTooltipContent>
                           <span>Open profile
                             <i
-                              v-if="profile"
                               class="ri-external-link-line text-gray-400"
                             /></span>
                         </template>
-                        <div class="badge--interactive" @click.prevent>
-                          {{ profile }}
-                        </div>
-                      </el-tooltip>
+                      </app-tags>
                     </div>
                     <span
                       v-else
@@ -547,6 +545,7 @@ import {
 import { formatDateToTimeAgo } from '@/utils/date';
 import { formatNumberToCompact, formatNumber } from '@/utils/number';
 import { withHttp, toSentenceCase } from '@/utils/string';
+import AppTags from '@/shared/tags/tags.vue';
 import AppOrganizationIdentities from '../organization-identities.vue';
 import AppOrganizationListToolbar from './organization-list-toolbar.vue';
 import AppOrganizationName from '../organization-name.vue';

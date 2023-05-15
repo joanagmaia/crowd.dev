@@ -57,9 +57,27 @@
       </div>
     </div>
     <div
-      class="text-sm text-gray-600 py-6 border-b border-gray-200 mb-4"
+      class="py-6 border-b border-gray-200 mb-4"
     >
-      {{ organization.description }}
+      <app-organization-headline :organization="organization" />
+
+      <div
+        v-if="organization.description"
+        ref="descriptionRef"
+        class="mt-2 text-sm text-gray-600"
+        :class="{
+          'line-clamp-4': displayShowMore && !showMore,
+        }"
+        v-html="$sanitize(organization.description)"
+      />
+      <!-- show more/less button -->
+      <div
+        v-if="displayShowMore"
+        class="text-2xs text-brand-500 mt-3 cursor-pointer"
+        @click.stop="showMore = !showMore"
+      >
+        Show {{ showMore ? 'less' : 'more' }}
+      </div>
     </div>
 
     <div class="grid grid-rows-2 grid-flow-col gap-4">
@@ -146,7 +164,7 @@
 </template>
 
 <script setup>
-import { defineProps } from 'vue';
+import { defineProps, onMounted, ref } from 'vue';
 import moment from 'moment';
 import {
   formatDate,
@@ -160,12 +178,28 @@ import {
 import { withHttp } from '@/utils/string';
 import AppOrganizationBadge from '@/modules/organization/components/organization-badge.vue';
 import AppOrganizationDropdown from '@/modules/organization/components/organization-dropdown.vue';
+import AppOrganizationHeadline from '@/modules/organization/components/organization-headline..vue';
 
 defineProps({
   organization: {
     type: Object,
     default: () => {},
   },
+});
+
+const showMore = ref(false);
+const displayShowMore = ref(true);
+const descriptionRef = ref(null);
+
+onMounted(() => {
+  const body = descriptionRef.value;
+  if (body) {
+    const height = body.clientHeight;
+    const { scrollHeight } = body;
+    displayShowMore.value = scrollHeight > height;
+  } else {
+    displayShowMore.value = false;
+  }
 });
 
 const formattedInformation = (value, type) => {

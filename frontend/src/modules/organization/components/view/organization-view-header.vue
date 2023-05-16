@@ -193,7 +193,7 @@ const displayShowMore = computed(() => {
     return false;
   }
 
-  return descriptionRef.value?.scrollHeight >= descriptionRef.value?.clientHeight;
+  return descriptionRef.value?.scrollHeight > descriptionRef.value?.clientHeight;
 });
 
 const toggleContent = () => {

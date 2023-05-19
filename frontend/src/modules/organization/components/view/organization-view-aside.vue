@@ -189,6 +189,7 @@
 <script setup>
 import { defineProps, computed } from 'vue';
 import enrichmentAttributes, { attributesTypes } from '@/modules/organization/config/organization-enrichment-attributes';
+import { withHttp } from '@/utils/string';
 import AppOrganizationAsideEnriched from './_aside/_aside-enriched.vue';
 
 const props = defineProps({
@@ -230,18 +231,18 @@ const shouldShowAttributes = computed(() => enrichmentAttributes.some((a) => {
 
 const getIdentityLink = (platform) => {
   if (props.organization[platform]?.url) {
-    return props.organization[platform]?.url;
+    return withHttp(props.organization[platform]?.url);
   } if (props.organization[platform]?.handle) {
     let url;
 
     if (platform === 'linkedin') {
-      url = 'https://www.linkedin.com/';
+      url = 'https://www.linkedin.com/company';
     } else if (platform === 'github') {
       url = 'https://github.com/';
     } else if (platform === 'twitter') {
       url = 'https://twitter.com/';
     } else if (platform === 'crunchbase') {
-      url = 'https://www.crunchbase.com/';
+      url = 'https://www.crunchbase.com/organization/';
     } else if (platform === 'facebook') {
       url = 'https://www.facebook.com/';
     } else {

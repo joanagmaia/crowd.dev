@@ -12,6 +12,7 @@ import zapier from './zapier';
 import crunchbase from './crunchbase';
 import make from './make';
 import git from './git';
+import facebook from './facebook';
 
 class IntegrationsConfig {
   get integrations() {
@@ -30,6 +31,7 @@ class IntegrationsConfig {
       crunchbase,
       make,
       discourse,
+      facebook,
     };
   }
 

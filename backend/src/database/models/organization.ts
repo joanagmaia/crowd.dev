@@ -181,6 +181,12 @@ export default (sequelize) => {
       foreignKey: 'organizationId',
     })
 
+    models.organization.belongsToMany(models.segment, {
+      as: 'segments',
+      through: 'organizationSegments',
+      timestamps: false,
+    })
+
     models.organization.belongsTo(models.tenant, {
       as: 'tenant',
       foreignKey: {

@@ -16,7 +16,6 @@ import QueryParser from './filters/queryParser'
 import { JsonColumnInfo, QueryOutput } from './filters/queryTypes'
 import RawQueryParser from './filters/rawQueryParser'
 import SequelizeRepository from './sequelizeRepository'
-import SettingsRepository from './settingsRepository'
 import TenantRepository from './tenantRepository'
 import {
   IActiveMemberData,
@@ -26,6 +25,7 @@ import {
   IMemberMergeSuggestion,
 } from './types/memberTypes'
 import { ActivityDisplayVariant } from '../../types/activityTypes'
+import SegmentRepository from './segmentRepository'
 
 const { Op } = Sequelize
 
@@ -99,6 +99,8 @@ class MemberRepository {
       }
     }
 
+    await MemberRepository.includeMemberToSegments(record.id, options)
+
     await record.setActivities(data.activities || [], {
       transaction,
     })
@@ -127,6 +129,55 @@ class MemberRepository {
     await this._createAuditLog(AuditLogRepository.CREATE, record, data, options)
 
     return this.findById(record.id, options, true, doPopulateRelations)
+  }
+
+  static async includeMemberToSegments(memberId: string, options: IRepositoryOptions) {
+    const seq = SequelizeRepository.getSequelize(options)
+
+    const transaction = SequelizeRepository.getTransaction(options)
+
+    let bulkInsertMemberSegments = `INSERT INTO "memberSegments" ("memberId","segmentId", "tenantId", "createdAt") VALUES `
+    const replacements = {
+      memberId,
+      tenantId: options.currentTenant.id,
+    }
+
+    for (let idx = 0; idx < options.currentSegments.length; idx++) {
+      bulkInsertMemberSegments += ` (:memberId, :segmentId${idx}, :tenantId, now()) `
+
+      replacements[`segmentId${idx}`] = options.currentSegments[idx].id
+
+      if (idx !== options.currentSegments.length - 1) {
+        bulkInsertMemberSegments += `,`
+      }
+    }
+
+    bulkInsertMemberSegments += ` ON CONFLICT DO NOTHING`
+
+    await seq.query(bulkInsertMemberSegments, {
+      replacements,
+      type: QueryTypes.INSERT,
+      transaction,
+    })
+  }
+
+  static async excludeMemberFromSegments(memberId: string, options: IRepositoryOptions) {
+    const seq = SequelizeRepository.getSequelize(options)
+
+    const transaction = SequelizeRepository.getTransaction(options)
+
+    const bulkDeleteMemberSegments = `DELETE FROM "memberSegments" WHERE "memberId" = :memberId and "segmentId" in (:segmentIds);`
+
+    await seq.query(bulkDeleteMemberSegments, {
+      replacements: {
+        memberId,
+        segmentIds: options.currentSegments.map((s) => s.id),
+      },
+      type: QueryTypes.DELETE,
+      transaction,
+    })
+
+    return this.findById(memberId, options, true, false)
   }
 
   static async findSampleDataMemberIds(options: IRepositoryOptions) {
@@ -399,7 +450,13 @@ class MemberRepository {
     const currentTenant = SequelizeRepository.getCurrentTenant(options)
 
     const query = `
-    with identities as (select mi."memberId",
+    with segment_ids as (
+      select "memberId", array_agg("segmentId") as "segmentIds" from
+      "memberSegments"
+      where "tenantId" = :tenantId
+      group by "memberId"
+    ),
+    identities as (select mi."memberId",
                            array_agg(distinct mi.platform)             as identities,
                            jsonb_object_agg(mi.platform, mi.usernames) as username
                     from (select "memberId",
@@ -431,10 +488,12 @@ class MemberRepository {
             m."tenantId",
             m."createdById",
             m."updatedById",
-            i.username
+            i.username,
+            si."segmentIds" as segments
       from members m
               inner join "memberIdentities" mi on m.id = mi."memberId"
               inner join identities i on i."memberId" = m.id
+              inner join segment_ids si on si."memberId" = m.id
       where mi."tenantId" = :tenantId
         and mi.platform = :platform
         and mi.username in (:usernames)
@@ -553,6 +612,11 @@ class MemberRepository {
         transaction,
       })
     }
+
+    if (data.segments) {
+      await MemberRepository.includeMemberToSegments(record.id, { ...options, transaction })
+    }
+
     const seq = SequelizeRepository.getSequelize(options)
 
     if (data.username) {
@@ -630,24 +694,30 @@ class MemberRepository {
 
     const currentTenant = SequelizeRepository.getCurrentTenant(options)
 
-    const record = await options.database.member.findOne({
-      where: {
-        id,
-        tenantId: currentTenant.id,
-      },
-      transaction,
-    })
+    const member = await MemberRepository.excludeMemberFromSegments(id, { ...options, transaction })
 
-    if (!record) {
-      throw new Error404()
+    // if member doesn't belong to any other segment anymore, remove it
+
+    if (member.segments.length === 0) {
+      const record = await options.database.member.findOne({
+        where: {
+          id,
+          tenantId: currentTenant.id,
+          segmentId: options.currentSegments.map((s) => s.id),
+        },
+        transaction,
+      })
+
+      if (!record) {
+        throw new Error404()
+      }
+
+      await record.destroy({
+        force,
+        transaction,
+      })
+      await this._createAuditLog(AuditLogRepository.DELETE, record, record, options)
     }
-
-    await record.destroy({
-      force,
-      transaction,
-    })
-
-    await this._createAuditLog(AuditLogRepository.DELETE, record, record, options)
   }
 
   static async destroyBulk(ids, options: IRepositoryOptions, force = false) {
@@ -659,11 +729,58 @@ class MemberRepository {
       where: {
         id: ids,
         tenantId: currentTenant.id,
+        segmentId: options.currentSegments.map((s) => s.id),
       },
       force,
       transaction,
     })
   }
+
+  /*
+  static async getSegments(
+    memberIds: string[],
+    options: IRepositoryOptions,
+  ): Promise<Map<string, SegmentData[]>> {
+    const results = new Map<string, SegmentData[]>()
+
+    const transaction = SequelizeRepository.getTransaction(options)
+    const seq = SequelizeRepository.getSequelize(options)
+
+    const query = `
+      select "memberId", "segmentId", "tenantId", "createdAt" from "memberSegments" where "memberId" in (:memberIds) order by "createdAt" asc;
+    `
+
+    const data = await seq.query(query, {
+      replacements: {
+        memberIds,
+      },
+      type: QueryTypes.SELECT,
+      transaction,
+    })
+
+    for (const id of memberIds) {
+      results.set(id, [])
+    }
+
+    for (const res of data as any[]) {
+      const { memberId, segmentId, username, sourceId, integrationId, createdAt } = res
+      const identities = results.get(memberId)
+
+      identities.push({
+        platform,
+        username,
+        sourceId,
+        integrationId,
+        createdAt,
+      })
+    }
+
+
+    // TODO: complete
+
+    return results
+  }
+  */
 
   static async getIdentities(
     memberIds: string[],
@@ -718,9 +835,11 @@ class MemberRepository {
 
     const include = [
       {
-        model: options.database.organization,
-        attributes: ['id', 'name'],
-        as: 'organizations',
+        model: options.database.segment,
+        as: 'segments',
+        through: {
+          attributes: [],
+        },
       },
     ]
 
@@ -1249,7 +1368,7 @@ where m."deletedAt" is null
         if (r.lastActivity) {
           r.lastActivity.display = ActivityDisplayService.getDisplayOptions(
             r.lastActivity,
-            SettingsRepository.getActivityTypes(options),
+            SegmentRepository.getActivityTypes(options),
             [ActivityDisplayVariant.SHORT, ActivityDisplayVariant.CHANNEL],
           )
         }

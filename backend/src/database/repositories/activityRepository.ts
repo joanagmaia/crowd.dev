@@ -26,6 +26,8 @@ class ActivityRepository {
 
     const transaction = SequelizeRepository.getTransaction(options)
 
+    const segment = SequelizeRepository.getStrictlySingleActiveSegment(options)
+
     // Data and body will be displayed as HTML. We need to sanitize them.
     if (data.body) {
       data.body = sanitizeHtml(data.body).trim()
@@ -71,6 +73,7 @@ class ActivityRepository {
         parentId: data.parent || null,
         sourceParentId: data.sourceParentId || null,
         conversationId: data.conversationId || null,
+        segmentId: segment.id,
         tenantId: tenant.id,
         createdById: currentUser.id,
         updatedById: currentUser.id,
@@ -121,6 +124,7 @@ class ActivityRepository {
       where: {
         id,
         tenantId: currentTenant.id,
+        segmentId: options.currentSegments.map((s) => s.id),
       },
       transaction,
     })
@@ -190,6 +194,7 @@ class ActivityRepository {
       where: {
         id,
         tenantId: currentTenant.id,
+        segmentId: options.currentSegments.map((s) => s.id),
       },
       transaction,
     })
@@ -230,6 +235,7 @@ class ActivityRepository {
       where: {
         id,
         tenantId: currentTenant.id,
+        segmentId: options.currentSegments.map((s) => s.id),
       },
       include,
       transaction,
@@ -256,6 +262,7 @@ class ActivityRepository {
     const record = await options.database.activity.findOne({
       where: {
         tenantId: currentTenant.id,
+        segmentId: options.currentSegments.map((s) => s.id),
         ...query,
       },
       transaction,
@@ -299,6 +306,7 @@ class ActivityRepository {
       where: {
         ...filter,
         tenantId: tenant.id,
+        segmentId: options.currentSegments.map((s) => s.id),
       },
       transaction,
     })
@@ -552,6 +560,15 @@ class ActivityRepository {
                 name: 'memberTags',
                 from: 'memberId',
                 to: 'tagId',
+              },
+            },
+            segments: {
+              table: 'members',
+              model: 'member',
+              relationTable: {
+                name: 'memberSegments',
+                from: 'memberId',
+                to: 'segmentId',
               },
             },
             organizations: {

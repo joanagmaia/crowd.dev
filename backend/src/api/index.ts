@@ -8,6 +8,7 @@ import { Unleash } from 'unleash-client'
 import { API_CONFIG, UNLEASH_CONFIG } from '../config'
 import { authMiddleware } from '../middlewares/authMiddleware'
 import { tenantMiddleware } from '../middlewares/tenantMiddleware'
+import { segmentMiddleware } from '../middlewares/segmentMiddleware'
 import { databaseMiddleware } from '../middlewares/databaseMiddleware'
 import { searchEngineMiddleware } from '../middlewares/searchEngineMiddleware'
 import { createRateLimiter } from './apiRateLimiter'
@@ -186,10 +187,12 @@ setImmediate(async () => {
   require('./organization').default(routes)
   require('./quickstart-guide').default(routes)
   require('./slack').default(routes)
+  require('./segment').default(routes)
   require('./eventTracking').default(routes)
   require('./premium/enrichment').default(routes)
   // Loads the Tenant if the :tenantId param is passed
   routes.param('tenantId', tenantMiddleware)
+  routes.param('tenantId', segmentMiddleware)
 
   app.use('/', routes)
 

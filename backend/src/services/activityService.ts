@@ -17,9 +17,9 @@ import { logExecutionTime } from '../utils/logging'
 import { sendNewActivityNodeSQSMessage } from '../serverless/utils/nodeWorkerSQS'
 import { LoggingBase } from './loggingBase'
 import MemberAttributeSettingsRepository from '../database/repositories/memberAttributeSettingsRepository'
-import SettingsRepository from '../database/repositories/settingsRepository'
-import SettingsService from './settingsService'
 import { mapUsernameToIdentities } from '../database/repositories/types/memberTypes'
+import SegmentRepository from '../database/repositories/segmentRepository'
+import SegmentService from './segmentService'
 
 export default class ActivityService extends LoggingBase {
   options: IServiceOptions
@@ -58,14 +58,17 @@ export default class ActivityService extends LoggingBase {
       if (
         data.platform &&
         data.type &&
-        !SettingsRepository.activityTypeExists(data.platform, data.type, this.options)
+        !SegmentRepository.activityTypeExists(data.platform, data.type, this.options)
       ) {
-        await SettingsService.createActivityType({ type: data.type }, this.options, data.platform)
+        await new SegmentService(this.options).createActivityType(
+          { type: data.type },
+          data.platform,
+        )
       }
 
       // check if channel exists in settings for respective platform. If not, update by adding channel to settings
       if (data.platform && data.channel) {
-        await SettingsService.updateActivityChannels(data, this.options)
+        await new SegmentService(this.options).updateActivityChannels(data)
       }
 
       // If a sourceParentId is sent, try to find it in our db

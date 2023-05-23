@@ -75,7 +75,7 @@
           <router-link
             class="h-10 flex items-center"
             :to="{
-              name: 'segmentsProjects',
+              name: 'adminProjects',
               params: { id: row.id },
             }"
           >

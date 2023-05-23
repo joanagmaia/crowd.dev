@@ -1,6 +1,9 @@
 <template>
   <el-container>
-    <app-menu />
+    <!-- App menu -->
+    <app-lf-menu v-if="isSegmentsFeatureEnabled" />
+    <app-menu v-else />
+
     <el-container :style="elMainStyle">
       <el-main id="main-page-wrapper" class="relative">
         <div
@@ -99,12 +102,15 @@
 import { mapActions, mapGetters } from 'vuex';
 import Banner from '@/shared/banner/banner.vue';
 import identify from '@/shared/monitoring/identify';
+import AppLfMenu from '@/modules/lf/layout/components/lf-menu.vue';
 import AppMenu from '@/modules/layout/components/menu.vue';
+import { FeatureFlag } from '@/featureFlag';
 
 export default {
   name: 'AppLayout',
 
   components: {
+    AppLfMenu,
     AppMenu,
     Banner,
   },
@@ -157,6 +163,11 @@ export default {
       }
 
       return null;
+    },
+    isSegmentsFeatureEnabled() {
+      return FeatureFlag.isFlagEnabled(
+        FeatureFlag.flags.segments,
+      );
     },
   },
 

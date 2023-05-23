@@ -33,7 +33,7 @@
         <el-divider class="border-gray-200 !my-2" />
         <router-link
           :to="{
-            name: 'segmentsProjects',
+            name: 'adminProjects',
             params: { id },
           }"
         >

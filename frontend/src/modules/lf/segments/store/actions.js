@@ -173,4 +173,9 @@ export default {
 
     this.listProjects();
   },
+  updateSelectedProjectGroup(projectGroupId) {
+    const projectGroup = this.projectGroups.list.find((p) => p.id === projectGroupId);
+
+    this.selectedProjectGroup = projectGroup;
+  },
 };

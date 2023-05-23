@@ -1,5 +1,9 @@
 import Layout from '@/modules/layout/components/layout.vue';
 
+const ProjectGroupsListPage = () => import(
+  '@/modules/lf/segments/pages/lf-project-groups-list.vue'
+);
+
 const ProjectGroupsPage = () => import(
   '@/modules/lf/segments/pages/lf-project-groups-page.vue'
 );
@@ -15,25 +19,35 @@ export default [
     component: Layout,
     meta: {
       auth: true,
-      title: 'Admin Panel',
       requiresSegmentsFeatureFlagEnabled: true,
     },
     children: [
       {
-        name: 'segmentsProjectGroups',
-        path: '/admin/project-groups',
-        component: ProjectGroupsPage,
+        name: 'projectGroupsList',
+        path: '/project-groups',
+        component: ProjectGroupsListPage,
         meta: {
           auth: true,
+          title: 'Project Groups',
         },
       },
       {
-        name: 'segmentsProjects',
-        path: '/admin/project-groups/:id/projects',
-        component: ProjectsPage,
+        name: 'adminProjectGroups',
+        path: '/admin/project-groups',
+        component: ProjectGroupsPage,
         meta: {
-          auth: true,
+          title: 'Admin Panel',
         },
+        children: [
+          {
+            name: 'adminProjects',
+            path: '/:id/projects',
+            component: ProjectsPage,
+            meta: {
+              auth: true,
+            },
+          },
+        ],
       },
     ],
   },

@@ -1,4 +1,5 @@
 export default () => ({
+  selectedProjectGroup: null,
   projectGroups: {
     list: [],
     loading: true,

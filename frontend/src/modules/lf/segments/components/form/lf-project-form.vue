@@ -115,8 +115,8 @@ import {
   computed, onMounted, reactive, ref,
 } from 'vue';
 import AppFormItem from '@/shared/form/form-item.vue';
-import { useLfSegmentsStore } from '@/modules/lf/segments/store';
 import statusOptions from '@/modules/lf/config/status';
+import { useLfSegmentsStore } from '@/modules/lf/segments/store';
 
 const emit = defineEmits(['update:modelValue']);
 const props = defineProps({

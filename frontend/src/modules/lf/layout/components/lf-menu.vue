@@ -190,7 +190,7 @@ export default {
         }
       }
 
-      &[disabled] {
+      &[disabled="true"] {
         @apply opacity-50
       }
 

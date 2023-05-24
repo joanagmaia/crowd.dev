@@ -6,7 +6,7 @@
     placeholder="Select project group..."
     :loading="loading"
   >
-    <template #prefix v-if="selectedProjectGroup">
+    <template v-if="selectedProjectGroup" #prefix>
       <img
         class="max-w-5 max-h-5"
         :src="selectedProjectGroup.url"
@@ -40,10 +40,10 @@
 </template>
 
 <script setup>
-import { storeToRefs } from "pinia";
-import { computed, onMounted } from "vue";
-import { useLfSegmentsStore } from "@/modules/lf/segments/store";
-import pluralize from "pluralize";
+import { storeToRefs } from 'pinia';
+import { computed, onMounted } from 'vue';
+import { useLfSegmentsStore } from '@/modules/lf/segments/store';
+import pluralize from 'pluralize';
 
 const lsSegmentsStore = useLfSegmentsStore();
 const { projectGroups, selectedProjectGroup } = storeToRefs(lsSegmentsStore);
@@ -53,13 +53,13 @@ const loading = computed(() => projectGroups.value.loading);
 const list = computed(() => projectGroups.value.list);
 
 const model = computed({
-    get() {
-        return selectedProjectGroup.value?.id
-    },
-    set(id) {
-        updateSelectedProjectGroup(id)
-    }
-})
+  get() {
+    return selectedProjectGroup.value?.id;
+  },
+  set(id) {
+    updateSelectedProjectGroup(id);
+  },
+});
 
 onMounted(() => {
   listProjectGroups();
@@ -68,7 +68,7 @@ onMounted(() => {
 
 <script>
 export default {
-  name: "AppLfMenuProjectGroupSelection",
+  name: 'AppLfMenuProjectGroupSelection',
 };
 </script>
 

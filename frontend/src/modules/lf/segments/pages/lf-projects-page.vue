@@ -8,7 +8,7 @@
       <span>Project groups</span>
     </router-link>
     <div class="text-sm text-brand-500 pb-2">
-      {{ projectGroup.name }}
+      {{ projectGroupForm.name }}
     </div>
 
     <div class="w-full flex items-center justify-between mb-6">
@@ -118,6 +118,7 @@ const {
 const loadingProjectGroup = ref(true);
 const projectGroupForm = reactive({
   slug: null,
+  name: null,
 });
 const projectForm = reactive({
   id: null,

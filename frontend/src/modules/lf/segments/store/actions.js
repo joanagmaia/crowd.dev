@@ -1,5 +1,6 @@
 import { LfService } from '@/modules/lf/segments/lf-segments-service';
 import Message from '@/shared/message/message';
+import { router } from '@/router';
 
 export default {
   // Project Groups
@@ -177,5 +178,9 @@ export default {
     const projectGroup = this.projectGroups.list.find((p) => p.id === projectGroupId);
 
     this.selectedProjectGroup = projectGroup;
+
+    router.push({
+      name: 'dashboard',
+    });
   },
 };

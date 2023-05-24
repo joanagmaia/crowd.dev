@@ -1,7 +1,7 @@
 import Layout from '@/modules/layout/components/layout.vue';
 
 const ProjectGroupsListPage = () => import(
-  '@/modules/lf/segments/pages/lf-project-groups-list.vue'
+  '@/modules/lf/segments/pages/lf-project-groups-list-page.vue'
 );
 
 const ProjectGroupsPage = () => import(
@@ -38,16 +38,15 @@ export default [
         meta: {
           title: 'Admin Panel',
         },
-        children: [
-          {
-            name: 'adminProjects',
-            path: '/:id/projects',
-            component: ProjectsPage,
-            meta: {
-              auth: true,
-            },
-          },
-        ],
+      },
+      {
+        name: 'adminProjects',
+        path: '/admin/project-groups/:id/projects',
+        component: ProjectsPage,
+        meta: {
+          auth: true,
+          title: 'Admin Panel',
+        },
       },
     ],
   },

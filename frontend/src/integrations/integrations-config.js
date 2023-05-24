@@ -5,6 +5,7 @@ import twitter from './twitter';
 import devto from './devto';
 import hackernews from './hackernews';
 import discourse from './discourse';
+import hubspot from './hubspot';
 import stackoverflow from './stackoverflow';
 import reddit from './reddit';
 import linkedin from './linkedin';
@@ -30,8 +31,9 @@ class IntegrationsConfig {
       git,
       crunchbase,
       discourse,
-      facebook,
+      hubspot,
       make,
+      facebook,
     };
   }
 

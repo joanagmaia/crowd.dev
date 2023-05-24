@@ -8,7 +8,8 @@ import {
   IPendingStream,
   IProcessStreamResults,
   IStepContext,
- IProcessWebhookResults } from '../../../../types/integration/stepResult'
+  IProcessWebhookResults,
+} from '../../../../types/integration/stepResult'
 import {
   DiscourseConnectionParams,
   DiscourseCategoryResponse,
@@ -21,7 +22,7 @@ import {
   DiscourseWebhookPost,
   DiscourseWebhookUser,
   DiscourseUserResponse,
-  DiscourseWebhookNotification
+  DiscourseWebhookNotification,
 } from '../../types/discourseTypes'
 import { getDiscourseCategories } from '../../usecases/discourse/getCategories'
 import { getDiscourseTopics } from '../../usecases/discourse/getTopics'
@@ -36,6 +37,10 @@ import { MemberAttributeName } from '../../../../database/attributes/member/enum
 import { DiscourseActivityType } from '../../../../types/activityTypes'
 import { DiscourseGrid } from '../../grid/discourseGrid'
 import type { PlatformIdentities } from '../../types/messageTypes'
+
+const BOT_USERNAMES = ['system', 'discobot']
+
+const usernameIsBot = (username: string): boolean => BOT_USERNAMES.includes(username)
 
 enum DiscourseStreamType {
   CATEGORIES = 'categories',
@@ -189,6 +194,10 @@ export class DiscourseIntegrationService extends IntegrationServiceBase {
         const { topicId, lastIdInPreviousBatch } = stream.metadata
         const posts = data4.post_stream.posts
         for (const post of posts) {
+          if (usernameIsBot(post.username)) {
+            /* eslint-disable no-continue */
+            continue
+          }
           const user = await getDiscourseUserByUsername(
             {
               forumHostname: context.pipelineData.forumHostname,
@@ -199,7 +208,11 @@ export class DiscourseIntegrationService extends IntegrationServiceBase {
             context.logger,
           )
 
-          const member = DiscourseIntegrationService.parseUserIntoMember(user, context.pipelineData.forumHostname, context)
+          const member = DiscourseIntegrationService.parseUserIntoMember(
+            user,
+            context.pipelineData.forumHostname,
+            context,
+          )
 
           const activity: AddActivitiesSingle = {
             member,
@@ -208,7 +221,10 @@ export class DiscourseIntegrationService extends IntegrationServiceBase {
             tenant: context.integration.tenantId,
             sourceId: `${topicId}-${post.post_number}`,
             sourceParentId: post.post_number === 1 ? null : `${topicId}-${post.post_number - 1}`,
-            type: post.post_number === 1 ? DiscourseActivityType.CREATE_TOPIC : DiscourseActivityType.MESSAGE_IN_TOPIC,
+            type:
+              post.post_number === 1
+                ? DiscourseActivityType.CREATE_TOPIC
+                : DiscourseActivityType.MESSAGE_IN_TOPIC,
             timestamp: moment(post.created_at).utc().toDate(),
             body: sanitizeHtml(he.decode(post.cooked)),
             title: post.post_number === 1 ? stream.metadata.topicTitle : null,
@@ -345,22 +361,22 @@ export class DiscourseIntegrationService extends IntegrationServiceBase {
         }
         break
       default:
-         context.logger.warn(
-        {
-          event,
-          data,
-        },
-        'No record created for event!',
-      )
+        context.logger.warn(
+          {
+            event,
+            data,
+          },
+          'No record created for event!',
+        )
 
-      return {
-        operations: [],
-      }
+        return {
+          operations: [],
+        }
     }
 
-     return {
-       operations: [],
-     }
+    return {
+      operations: [],
+    }
   }
 
   async processPostCreatedWebhook(
@@ -368,6 +384,11 @@ export class DiscourseIntegrationService extends IntegrationServiceBase {
     context: IStepContext,
   ): Promise<IProcessWebhookResults> {
     const post = data.post
+    if (usernameIsBot(post.username)) {
+      return {
+        operations: [],
+      }
+    }
     const user = await getDiscourseUserByUsername(
       {
         forumHostname: context.integration.settings.forumHostname,
@@ -381,7 +402,7 @@ export class DiscourseIntegrationService extends IntegrationServiceBase {
     const member = DiscourseIntegrationService.parseUserIntoMember(
       user,
       context.integration.settings.forumHostname,
-      context
+      context,
     )
 
     const activity: AddActivitiesSingle = {
@@ -398,7 +419,7 @@ export class DiscourseIntegrationService extends IntegrationServiceBase {
       timestamp: moment(post.created_at).utc().toDate(),
       body: sanitizeHtml(he.decode(post.cooked)),
       title: post.post_number === 1 ? post.topic_title : null,
-      url: `${context.pipelineData.forumHostname}/t/${post.topic_slug}/${post.topic_id}/${post.post_number}`,
+      url: `${context.integration.settings.forumHostname}/t/${post.topic_slug}/${post.topic_id}/${post.post_number}`,
       channel: post.topic_title,
       score:
         post.post_number === 1
@@ -415,10 +436,9 @@ export class DiscourseIntegrationService extends IntegrationServiceBase {
         {
           type: Operations.UPSERT_ACTIVITIES_WITH_MEMBERS,
           records: [activity],
-        }
-      ]
+        },
+      ],
     }
-    
   }
 
   async processUserCreatedWebhook(
@@ -426,6 +446,11 @@ export class DiscourseIntegrationService extends IntegrationServiceBase {
     context: IStepContext,
   ): Promise<IProcessWebhookResults> {
     const user = data.user
+    if (usernameIsBot(user.username)) {
+      return {
+        operations: [],
+      }
+    }
     const member = DiscourseIntegrationService.parseUserIntoMember(
       {
         user: user as any,
@@ -435,7 +460,7 @@ export class DiscourseIntegrationService extends IntegrationServiceBase {
         users: [],
       },
       context.integration.settings.forumHostname,
-      context
+      context,
     )
 
     const activity: AddActivitiesSingle = {
@@ -448,7 +473,7 @@ export class DiscourseIntegrationService extends IntegrationServiceBase {
       timestamp: moment(user.created_at).utc().toDate(),
       body: null,
       title: null,
-      url: `${context.pipelineData.forumHostname}/u/${user.username}`,
+      url: `${context.integration.settings.forumHostname}/u/${user.username}`,
       channel: null,
       score: DiscourseGrid[DiscourseActivityType.JOIN].score,
       isContribution: DiscourseGrid[DiscourseActivityType.JOIN].isContribution,
@@ -459,8 +484,8 @@ export class DiscourseIntegrationService extends IntegrationServiceBase {
         {
           type: Operations.UPSERT_ACTIVITIES_WITH_MEMBERS,
           records: [activity],
-        }
-      ]
+        },
+      ],
     }
   }
 
@@ -469,8 +494,19 @@ export class DiscourseIntegrationService extends IntegrationServiceBase {
     context: IStepContext,
   ): Promise<IProcessWebhookResults> {
     const notification = data.notification
-    const username = notification.data.username ? notification.data.username : notification.data.original_username
-    const channel = notification.fancy_title ? notification.fancy_title : notification.data.topic_title
+    const username = notification.data.username
+      ? notification.data.username
+      : notification.data.original_username
+    const channel = notification.fancy_title
+      ? notification.fancy_title
+      : notification.data.topic_title
+
+    if (usernameIsBot(username)) {
+      return {
+        operations: [],
+      }
+    }
+
     const user = await getDiscourseUserByUsername(
       {
         forumHostname: context.integration.settings.forumHostname,
@@ -481,39 +517,42 @@ export class DiscourseIntegrationService extends IntegrationServiceBase {
       context.logger,
     )
 
-     const member = DiscourseIntegrationService.parseUserIntoMember(
-       user,
-       context.integration.settings.forumHostname,
-       context
-     )
+    const member = DiscourseIntegrationService.parseUserIntoMember(
+      user,
+      context.integration.settings.forumHostname,
+      context,
+    )
 
-     const activity: AddActivitiesSingle = {
-       member,
-       username: member.username[PlatformType.DISCOURSE].username,
-       platform: PlatformType.DISCOURSE,
-       tenant: context.integration.tenantId,
-       sourceId: `${notification.id}`,
-       type: DiscourseActivityType.LIKE,
-       timestamp: moment(notification.created_at).utc().toDate(),
-       body: null,
-       title: null,
-       channel,
-       score: DiscourseGrid[DiscourseActivityType.LIKE].score,
-       isContribution: DiscourseGrid[DiscourseActivityType.LIKE].isContribution,
-     }
+    const activity: AddActivitiesSingle = {
+      member,
+      username: member.username[PlatformType.DISCOURSE].username,
+      platform: PlatformType.DISCOURSE,
+      tenant: context.integration.tenantId,
+      sourceId: `${notification.id}`,
+      type: DiscourseActivityType.LIKE,
+      timestamp: moment(notification.created_at).utc().toDate(),
+      body: null,
+      title: null,
+      channel,
+      score: DiscourseGrid[DiscourseActivityType.LIKE].score,
+      isContribution: DiscourseGrid[DiscourseActivityType.LIKE].isContribution,
+    }
 
-      return {
-        operations: [
-          {
-            type: Operations.UPSERT_ACTIVITIES_WITH_MEMBERS,
-            records: [activity],
-          },
-        ],
-      }
-  } 
+    return {
+      operations: [
+        {
+          type: Operations.UPSERT_ACTIVITIES_WITH_MEMBERS,
+          records: [activity],
+        },
+      ],
+    }
+  }
 
-
-  static parseUserIntoMember(user: DiscourseUserResponse, forumHostname: string, context: IStepContext): Member {
+  static parseUserIntoMember(
+    user: DiscourseUserResponse,
+    forumHostname: string,
+    context: IStepContext,
+  ): Member {
     return {
       username: {
         [PlatformType.DISCOURSE]: {
@@ -544,5 +583,5 @@ export class DiscourseIntegrationService extends IntegrationServiceBase {
       },
       emails: user.user.email ? [user.user.email] : [],
     }
-}
+  }
 }

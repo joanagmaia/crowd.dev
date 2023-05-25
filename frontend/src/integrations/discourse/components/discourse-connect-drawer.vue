@@ -7,7 +7,7 @@
     pre-title="Integration"
     :show-footer="true"
     has-border
-    @close="isVisible = false"
+    @close="handleCancel()"
   >
     <template #beforeTitle>
       <img
@@ -40,7 +40,7 @@
             ref="focus"
             v-model="form.discourseURL"
             placeholder="https://community.crowd.dev"
-            @blur="$v.discourseURL.$touch && validate()"
+            @blur="onBlurDiscourseURL()"
           />
         </app-form-item>
         <app-form-item
@@ -60,7 +60,7 @@
           <el-input
             ref="focus"
             v-model="form.apiKey"
-            @blur="$v.apiKey.$touch && validate()"
+            @blur="onBlurAPIKey()"
           >
             <template #suffix>
               <div
@@ -143,7 +143,7 @@
       </el-form>
       <el-card v-if="isAPIConnectionValid && props.integration?.settings?.forumHostname" shadow="never" class="rounded-[6px]">
         <div class="mb-3 flex flex-row w-full justify-between">
-          <el-button :disabled="isWebhookVerifying" @click="verifyWebhook()">
+          <el-button :disabled="isWebhookVerifying" class="btn btn--bordered" @click="verifyWebhook()">
             Verify webhook
           </el-button>
           <div v-if="isWebhookVerifying == null" />
@@ -292,7 +292,7 @@ const $v = useVuelidate(rules, form, { $externalResults });
 async function validate() {
   $v.value.$clearExternalResults();
   // check if everything is valid
-  if (!await $v.value.$validate()) return;
+  if ($v.value.$error) return;
 
   isValidating.value = true;
 
@@ -316,6 +316,16 @@ async function validate() {
   isValidating.value = false;
 }
 
+const onBlurDiscourseURL = async () => {
+  $v.value.discourseURL.$touch();
+  await validate();
+};
+
+const onBlurAPIKey = async () => {
+  $v.value.apiKey.$touch();
+  await validate();
+};
+
 const emit = defineEmits(['update:modelValue']);
 
 const { hasFormChanged, formSnapshot } = formChangeDetector(form);
@@ -333,7 +343,8 @@ const isVisible = computed({
 
 const handleCancel = () => {
   emit('update:modelValue', false);
-  if (!props.integration?.settings.forumHostname) {
+  if (!props.integration?.settings?.forumHostname) {
+    console.log('resetting form');
     form.apiKey = '';
     form.discourseURL = '';
     isValidating.value = false;
@@ -342,8 +353,10 @@ const handleCancel = () => {
     isWebhookVerifying.value = null;
     isWebhookValid.value = false;
     $externalResults.value = {};
+    $v.value.$reset();
   } else {
-    form.discourseURL = props.integration.settings.forumHostname;
+    console.log('resetting form 2');
+    form.discourseURL = props.integration?.settings?.forumHostname;
     form.apiKey = props.integration.settings.apiKey;
     webhookSecret.value = props.integration.settings.webhookSecret;
     payloadURL.value = `${window.location.origin}/api/webhooks/discourse/${tenantId}`;
@@ -351,6 +364,7 @@ const handleCancel = () => {
     isWebhookVerifying.value = null;
     isWebhookValid.value = false;
     $externalResults.value = {};
+    $v.value.$reset();
   }
   formSnapshot();
 };
